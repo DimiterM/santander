@@ -1,14 +1,21 @@
 import time
 import pandas as pd
 import numpy as np
-# TODO: less code duplication
 
-
+NUM_CLASSES = 24
 MAX_SEQUENCE_LENGTH = 17
 
-def load_trainset():
-    df = pd.read_csv("./df.csv")
-    
+trainset_filename = "./smalldf.csv"
+testset_filename = "./testdf.csv"
+
+
+
+"""
+for each row of the dataframe 
+prepend the number of rows for this id 
+and the maximum month for this id
+"""
+def df_merge_counts_and_maxs(df):
     df_counts = df[["id", "t"]].groupby("id").count()
     df_counts["id"] = df_counts.index
     df_counts.columns = ["t_count", "id"]
@@ -17,97 +24,92 @@ def load_trainset():
     df_maxs["id"] = df_maxs.index
     df_maxs.columns = ["t_max", "id"]
     
-    df = pd.merge(df_counts, df_maxs, how="outer", on=["id"]).merge(df, how="outer", on=["id"])
+    return pd.merge(df_counts, df_maxs, how="outer", on=["id"]).merge(df, how="outer", on=["id"])
+
+
+
+"""
+build list of numpy arrays (buckets) for all sequence lengths
+"""
+def make_buckets_dataset(df_tmax_groups, df_attr_groups, ys):
+    ids_buckets = np.array([]).reshape(0, 1)
+    for i in range(len(df_tmax_groups)):
+        if not df_tmax_groups[i].empty:
+            ids = df_tmax_groups[i].iloc[:, 1:2]["id"].unique()
+            ids_buckets = np.concatenate((ids_buckets, ids.reshape(ids.size, 1)), axis=0)
+            df_tmax_groups[i] = df_tmax_groups[i].loc[:, ['t', 't_month']+ys].as_matrix()
+            df_tmax_groups[i] = df_tmax_groups[i].reshape(df_tmax_groups[i].shape[0]//(i+2), i+2, len(['t', 't_month']+ys))
+            df_attr_groups[i] = df_attr_groups[i].as_matrix()
+
+    X_buckets = []
+    y_buckets = []
+    A_buckets = []
+    for g, a in zip(df_tmax_groups, df_attr_groups):
+        if g.size > 0:
+            X_buckets.append(g[:, :-1, :])
+            y_buckets.append(g[:, -1:, 2:].reshape(g.shape[0], g.shape[2] - 2))
+            A_buckets.append(a)
+
+    df_tmax_groups, df_attr_groups = None, None
+    
+    return A_buckets, X_buckets, y_buckets, ids_buckets
+
+
+
+def load_trainset(max_month=0):
+    df = pd.read_csv(trainset_filename)
+    
+    if max_month > 0 and max_month < MAX_SEQUENCE_LENGTH:
+        print("max_month: " + str(max_month))
+        df = df.loc[df["t"] <= max_month]
+    
+    df = df_merge_counts_and_maxs(df)
     
     df_tmax_groups = []
     for i in range(2, MAX_SEQUENCE_LENGTH + 1):
         df_tmax_groups.append(df.loc[df["t_count"] == i].sort_values(["id", "t"]))
     
     df_attr_groups = []
-    for i in range(2, MAX_SEQUENCE_LENGTH + 1):    # TODO: transform attrs...
+    print(df.notnull().values.all())
+    for i in range(2, MAX_SEQUENCE_LENGTH + 1):
         df_attr_groups.append(df.loc[(df["t_count"] == i) & (df["t_max"] == df["t"])].sort_values(["id"])[ \
-            ["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"]] \
-            .fillna(value=0))
+            ["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"]])
     
-    ys = df.columns.tolist()[-24:]
+    ys = df.columns.tolist()[-NUM_CLASSES:]
     df = None
     
-    for i in range(len(df_tmax_groups)):
-        df_tmax_groups[i] = df_tmax_groups[i].loc[:, ['t', 't_month']+ys].as_matrix()
-        df_tmax_groups[i] = df_tmax_groups[i].reshape(df_tmax_groups[i].shape[0]//(i+2), i+2, len(['t', 't_month']+ys))
-        df_attr_groups[i] = df_attr_groups[i].as_matrix()
-    
-    X_buckets = []
-    y_buckets = []
-    for g in df_tmax_groups:
-        X_buckets.append(g[:, :-1, :])
-        y_buckets.append(g[:, -1:, 2:].reshape(g.shape[0], g.shape[2] - 2))
-    
-    df_tmax_groups = None
-    A_buckets = df_attr_groups
-    df_attr_groups = None
-    
-    for a, x, y in zip(A_buckets, X_buckets, y_buckets):
-        print(a.shape, x.shape, y.shape)
-    
+    A_buckets, X_buckets, y_buckets, _ = make_buckets_dataset(df_tmax_groups, df_attr_groups, ys)
     return A_buckets, X_buckets, y_buckets
 
 
 
-def load_testset():
-    testdf = pd.read_csv("./testdf.csv")
-    df = pd.read_csv("./df.csv")
+def load_testset(month=18):
+    testdf = pd.DataFrame()
+    if month > MAX_SEQUENCE_LENGTH:
+        testdf = pd.read_csv(testset_filename)
+    else:
+        testdf = pd.read_csv(trainset_filename)
+        testdf = testdf.loc[testdf["t"] == month]
+    
+    df = pd.read_csv(trainset_filename)
     df = df.loc[df["id"].isin(testdf["id"])]
     testdf = pd.concat([df, testdf], ignore_index=True, copy=False)
 
-    testdf_counts = testdf[["id", "t"]].groupby("id").count()
-    testdf_counts["id"] = testdf_counts.index
-    testdf_counts.columns = ["t_count", "id"]
-
-    testdf_maxs = df[["id", "t"]].groupby("id").max()
-    testdf_maxs["id"] = testdf_maxs.index
-    testdf_maxs.columns = ["t_max", "id"]
-
-    testdf = pd.merge(testdf_counts, testdf_maxs, how="outer", on=["id"]).merge(testdf, how="outer", on=["id"])
+    testdf = df_merge_counts_and_maxs(testdf)
 
     testdf_tmax_groups = []
     for i in range(2, MAX_SEQUENCE_LENGTH + 2):
         testdf_tmax_groups.append(testdf.loc[testdf["t_count"] == i].sort_values(["id", "t"]))
 
     testdf_attr_groups = []
+    print(testdf.notnull().values.all())
     for i in range(2, MAX_SEQUENCE_LENGTH + 2):
-        testdf_attr_groups.append(testdf.loc[(testdf["t_count"] == i) & (testdf["t"] == 18)].sort_values(["id"])[ \
-            ["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"]] \
-            .fillna(value=0))
+        testdf_attr_groups.append(testdf.loc[(testdf["t_count"] == i) & (testdf["t"] == MAX_SEQUENCE_LENGTH + 1)].sort_values(["id"])[ \
+            ["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"]])
 
-    ys = df.columns.tolist()[-24:]
-    testdf = None
-
-    ids_test_buckets = np.array([]).reshape(0, 1)
-    for i in range(len(testdf_tmax_groups)):
-        if not testdf_tmax_groups[i].empty:
-            ids = testdf_tmax_groups[i].iloc[:, 1:2]["id"].unique()
-            ids_test_buckets = np.concatenate((ids_test_buckets, ids.reshape(ids.size, 1)), axis=0)
-            testdf_tmax_groups[i] = testdf_tmax_groups[i].loc[:, ['t', 't_month']+ys].as_matrix()
-            testdf_tmax_groups[i] = testdf_tmax_groups[i].reshape(testdf_tmax_groups[i].shape[0]//(i+2), i+2, len(['t', 't_month']+ys))
-            testdf_attr_groups[i] = testdf_attr_groups[i].as_matrix()
-
-    X_test_buckets = []
-    y_test_buckets = []
-    for g in testdf_tmax_groups:
-        if g.size > 0:
-            X_test_buckets.append(g[:, :-1, :])
-            y_test_buckets.append(g[:, -1:, 2:].reshape(g.shape[0], g.shape[2] - 2))
-
-    testdf_tmax_groups = None
-    A_test_buckets = testdf_attr_groups
-    testdf_attr_groups = None
-
-    for a, x, y in zip(A_test_buckets, X_test_buckets, y_test_buckets):
-        print(a.shape if a.size > 0 else "--", x.shape if x.size > 0 else "--", y.shape if y.size > 0 else "--")
-
-    print(ids_test_buckets.shape)
+    ys = df.columns.tolist()[-NUM_CLASSES:]
+    df, testdf = None, None
     
-    return A_test_buckets, X_test_buckets, y_test_buckets, ids_test_buckets
+    return make_buckets_dataset(testdf_tmax_groups, testdf_attr_groups, ys)
 
 

@@ -12,6 +12,9 @@ from keras import optimizers
 print(time.strftime("%H:%M:%S", time.localtime()))
 A_buckets, X_buckets, y_buckets = dataset.load_trainset()
 
+for a, x, y in zip(A_buckets, X_buckets, y_buckets):
+    print(a.shape, x.shape, y.shape)
+
 
 print(time.strftime("%H:%M:%S", time.localtime()))
 a_output_length = 24
@@ -30,7 +33,7 @@ model = MergedModel(
 model.compile(
     loss=bin_crossentropy_true_only, 
     optimizer=optimizers.RMSprop(lr=0.001), 
-    metrics=[in_top_k_loss, 'binary_crossentropy', 'mean_squared_error', 'accuracy'])
+    metrics=[in_top_k_loss, 'binary_crossentropy', 'mean_squared_error'])
 
 
 print(time.strftime("%H:%M:%S", time.localtime()))
@@ -38,12 +41,17 @@ num_epochs = 10
 batch_size = 256
 model.train(A_buckets, X_buckets, y_buckets, num_epochs, batch_size)
 
-print(time.strftime("%H:%M:%S", time.localtime()))
-A_buckets = None
-X_buckets = None
-y_buckets = None
-A_test_buckets, X_test_buckets, y_test_buckets, ids_test_buckets = dataset.load_testset()
 
 print(time.strftime("%H:%M:%S", time.localtime()))
-y_test_pred = model.predict(A_test_buckets, X_test_buckets, y_test_buckets)
+A_buckets, X_buckets, y_buckets = None, None, None
+A_test_buckets, X_test_buckets, y_test_buckets, ids_test_buckets = dataset.load_testset()
+
+for a, x, y in zip(A_test_buckets, X_test_buckets, y_test_buckets):
+    print(a.shape, x.shape, y.shape)
+
+print(ids_test_buckets.shape)
+
+
+print(time.strftime("%H:%M:%S", time.localtime()))
+y_test_pred = model.predict(A_test_buckets, X_test_buckets, y_test_buckets, batch_size)
 np.savetxt("./res2.csv", np.concatenate((ids_test_buckets, y_test_pred), axis=1), delimiter=",")

@@ -74,7 +74,7 @@ class MergedModel:
             print(stats_all, batches_count)
 
 
-    def predict(self, A_test_buckets, X_test_buckets, y_test_buckets):
+    def predict(self, A_test_buckets, X_test_buckets, y_test_buckets, batch_size):
         y_test_pred = np.array([]).reshape(0, 24)
         for A_test, X_test, y_test in zip(A_test_buckets, X_test_buckets, y_test_buckets):
             if A_test.size > 0 and X_test.size > 0 and y_test.size > 0:

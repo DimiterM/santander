@@ -20,10 +20,10 @@ for i in range(2, MAX_SEQUENCE_LENGTH + 1):
     df_tmax_groups.append(df.loc[df["t_count"] == i].sort_values(["id", "t"]))
 
 df_attr_groups = []
+df.notnull().values.all()
 for i in range(2, MAX_SEQUENCE_LENGTH + 1):    # TODO: transform attrs...
     df_attr_groups.append(df.loc[(df["t_count"] == i) & (df["t_max"] == df["t"])].sort_values(["id"])[ \
-        ["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"]] \
-        .fillna(value=0))
+        ["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"]])
 
 ys = df.columns.tolist()[-24:]
 df = None
@@ -152,7 +152,7 @@ y_buckets = None
 
 
 testdf = pd.read_csv("./testdf.csv")
-df = pd.read_csv("./df.csv")
+df = pd.read_csv("./smalldf.csv")
 df = df.loc[df["id"].isin(testdf["id"])]
 testdf = pd.concat([df, testdf], ignore_index=True, copy=False)
 
@@ -171,10 +171,10 @@ for i in range(2, MAX_SEQUENCE_LENGTH + 2):
     testdf_tmax_groups.append(testdf.loc[testdf["t_count"] == i].sort_values(["id", "t"]))
 
 testdf_attr_groups = []
+testdf.notnull().values.all()
 for i in range(2, MAX_SEQUENCE_LENGTH + 2):
     testdf_attr_groups.append(testdf.loc[(testdf["t_count"] == i) & (testdf["t"] == 18)].sort_values(["id"])[ \
-        ["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"]] \
-        .fillna(value=0))
+        ["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"]])
 
 ys = df.columns.tolist()[-24:]
 testdf = None
@@ -190,13 +190,14 @@ for i in range(len(testdf_tmax_groups)):
 
 X_test_buckets = []
 y_test_buckets = []
-for g in testdf_tmax_groups:
+A_test_buckets = []
+for g, a in zip(testdf_tmax_groups, testdf_attr_groups):
     if g.size > 0:
         X_test_buckets.append(g[:, :-1, :])
         y_test_buckets.append(g[:, -1:, 2:].reshape(g.shape[0], g.shape[2] - 2))
+        A_test_buckets.append(a)
 
 testdf_tmax_groups = None
-A_test_buckets = testdf_attr_groups
 testdf_attr_groups = None
 
 for a, x, y in zip(A_test_buckets, X_test_buckets, y_test_buckets):
