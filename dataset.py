@@ -56,12 +56,24 @@ def make_buckets_dataset(df_tmax_groups, df_attr_groups, ys):
 
 
 
-def load_trainset(max_month=0):
+def df_remove_non_buyers(df):
+    print("non-buyers removed")
+    ys = df.columns.tolist()[-24:]
+    df["y_sum"] = df[ys].sum(axis=1)
+    df_sums = df[["id","y_sum"]].groupby("id", as_index=False).sum()
+    df_sums = df_sums.loc[df_sums["y_sum"] > 0]
+    return pd.merge(df_sums, df, how="inner", on=["id"])
+
+
+def load_trainset(max_month=0, cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], remove_non_buyers=False):
     df = pd.read_csv(trainset_filename)
     
     if max_month > 0 and max_month < MAX_SEQUENCE_LENGTH:
         print("max_month: " + str(max_month))
         df = df.loc[df["t"] <= max_month]
+    
+    if remove_non_buyers:
+        df = df_remove_non_buyers(df)
     
     df = df_merge_counts_and_maxs(df)
     
@@ -72,8 +84,7 @@ def load_trainset(max_month=0):
     df_attr_groups = []
     print(df.notnull().values.all())
     for i in range(2, MAX_SEQUENCE_LENGTH + 1):
-        df_attr_groups.append(df.loc[(df["t_count"] == i) & (df["t_max"] == df["t"])].sort_values(["id"])[ \
-            ["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"]])
+        df_attr_groups.append(df.loc[(df["t_count"] == i) & (df["t_max"] == df["t"])].sort_values(["id"])[cols])
     
     ys = df.columns.tolist()[-NUM_CLASSES:]
     df = None
@@ -83,16 +94,21 @@ def load_trainset(max_month=0):
 
 
 
-def load_testset(month=18):
+def load_testset(month=18, cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"]):
     testdf = pd.DataFrame()
+    df = pd.DataFrame()
     if month > MAX_SEQUENCE_LENGTH:
+        print("testset loaded")
         testdf = pd.read_csv(testset_filename)
+        df = pd.read_csv(trainset_filename)
+        df = df.loc[df["id"].isin(testdf["id"])]
     else:
+        print("month " + str(month) + " testset loaded")
         testdf = pd.read_csv(trainset_filename)
         testdf = testdf.loc[testdf["t"] == month]
-    
-    df = pd.read_csv(trainset_filename)
-    df = df.loc[df["id"].isin(testdf["id"])]
+        df = pd.read_csv(trainset_filename)
+        df = df.loc[(df["id"].isin(testdf["id"])) & (df["t"] < month)]
+
     testdf = pd.concat([df, testdf], ignore_index=True, copy=False)
 
     testdf = df_merge_counts_and_maxs(testdf)
@@ -104,8 +120,7 @@ def load_testset(month=18):
     testdf_attr_groups = []
     print(testdf.notnull().values.all())
     for i in range(2, MAX_SEQUENCE_LENGTH + 2):
-        testdf_attr_groups.append(testdf.loc[(testdf["t_count"] == i) & (testdf["t"] == MAX_SEQUENCE_LENGTH + 1)].sort_values(["id"])[ \
-            ["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"]])
+        testdf_attr_groups.append(testdf.loc[(testdf["t_count"] == i) & (testdf["t"] == month)].sort_values(["id"])[cols])
 
     ys = df.columns.tolist()[-NUM_CLASSES:]
     df, testdf = None, None

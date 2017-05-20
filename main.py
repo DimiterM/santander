@@ -10,7 +10,9 @@ from keras import optimizers
 
 
 print(time.strftime("%H:%M:%S", time.localtime()))
-A_buckets, X_buckets, y_buckets = dataset.load_trainset()
+attr_cols = ["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"]
+remove_non_buyers = False
+A_buckets, X_buckets, y_buckets = dataset.load_trainset(cols=attr_cols, remove_non_buyers=remove_non_buyers)
 
 for a, x, y in zip(A_buckets, X_buckets, y_buckets):
     print(a.shape, x.shape, y.shape)
@@ -44,7 +46,7 @@ model.train(A_buckets, X_buckets, y_buckets, num_epochs, batch_size)
 
 print(time.strftime("%H:%M:%S", time.localtime()))
 A_buckets, X_buckets, y_buckets = None, None, None
-A_test_buckets, X_test_buckets, y_test_buckets, ids_test_buckets = dataset.load_testset()
+A_test_buckets, X_test_buckets, y_test_buckets, ids_test_buckets = dataset.load_testset(cols=attr_cols)
 
 for a, x, y in zip(A_test_buckets, X_test_buckets, y_test_buckets):
     print(a.shape, x.shape, y.shape)
