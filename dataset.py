@@ -62,6 +62,7 @@ def df_remove_non_buyers(df):
     df["y_sum"] = df[ys].sum(axis=1)
     df_sums = df[["id","y_sum"]].groupby("id", as_index=False).sum()
     df_sums = df_sums.loc[df_sums["y_sum"] > 0]
+    df.drop(["y_sum"], axis=1, inplace=True)
     return pd.merge(df_sums, df, how="inner", on=["id"])
 
 

@@ -39,7 +39,7 @@ model.compile(
 
 
 print(time.strftime("%H:%M:%S", time.localtime()))
-num_epochs = 10
+num_epochs = 100
 batch_size = 256
 model.train(A_buckets, X_buckets, y_buckets, num_epochs, batch_size)
 
@@ -56,4 +56,4 @@ print(ids_test_buckets.shape)
 
 print(time.strftime("%H:%M:%S", time.localtime()))
 y_test_pred = model.predict(A_test_buckets, X_test_buckets, y_test_buckets, batch_size)
-np.savetxt("./res2.csv", np.concatenate((ids_test_buckets, y_test_pred), axis=1), delimiter=",")
+np.savetxt("./res.csv", np.concatenate((ids_test_buckets, y_test_pred), axis=1), delimiter=",")
