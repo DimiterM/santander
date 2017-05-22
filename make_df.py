@@ -1,3 +1,11 @@
+"""
+make_df.py
+Transforms the original Kaggle dataset (csv) to input dataset (csv) for the model
+Params:
+IMPUTE - True if the script should impute missing values
+ISTEST - True for the test set, False for the train set
+"""
+
 import pandas as pd
 import numpy as np
 IMPUTE = True

@@ -7,18 +7,18 @@ import keras.backend as K
 
 from keras import optimizers
 
-from keras.models import Sequential
-
+from keras.models import Model
 from keras.layers.normalization import BatchNormalization
 from keras.layers.recurrent import LSTM
 from keras.layers.core import Dense, Dropout, Activation
-from keras.layers import Merge
+from keras.layers import Input, Merge
 
 from sklearn.utils import shuffle
 
 
-class MergedModel:
 
+class MergedModelFunctional:
+    
     """
     a_output_length - .
     x_output_length - .
@@ -33,30 +33,30 @@ class MergedModel:
         output_length, input_dim, 
         attr_dim, data_dim, merged_data_dim
         ):
-        a_input = Sequential()
-        a_input.add(Dense(a_output_length, activation='softmax', input_dim=attr_dim))
-
-        x_input = Sequential()
-        x_input.add(LSTM(data_dim, input_dim=input_dim,
-            activation='sigmoid', inner_activation='hard_sigmoid', return_sequences=False))
-        # x_input.add(BatchNormalization()) #
-        # x_input.add(Activation('sigmoid')) #
-        x_input.add(Dropout(0.2))
-        x_input.add(Dense(x_output_length, activation='softmax'))
-
-        self.model = Sequential()
-        self.model.add(Merge([a_input, x_input], mode='concat'))
-        # self.model.add(Dense(merged_data_dim, activation='softmax'))
-        self.model.add(Dense(output_length, activation='softmax'))
+        a_input = Input(shape=(attr_dim,))
+        a_model = Dense(a_output_length, activation='softmax')(a_input)
         
-        self._a_model = a_input
-        self._x_model = x_input
-
-
+        x_input = Input(shape=(None, input_dim))
+        x_model = LSTM(data_dim,
+            activation='sigmoid', recurrent_activation='hard_sigmoid', return_sequences=False)(x_input)
+        # x_model = BatchNormalization()(x_model)
+        # x_model = Activation('sigmoid')(x_model)
+        x_model = Dropout(0.2)(x_model)
+        x_model = Dense(x_output_length, activation='softmax')(x_model)
+        
+        self.model = keras.layers.concatenate([a_model, x_model])
+        # self.model = Dense(merged_data_dim, activation='softmax')(self.model)
+        self.model = Dense(output_length, activation='softmax')(self.model)
+        
+        self.model = Model(inputs=[a_input, x_input], outputs=self.model)
+        self._a_model = a_model
+        self._x_model = x_model
+    
+    
     def compile(self, loss, optimizer, metrics):
         self.model.compile(loss=loss, optimizer=optimizer, metrics=metrics)
-
-
+    
+    
     def train(self, A_buckets, X_buckets, y_buckets, num_epochs, batch_size):
         for epoch in range(num_epochs):
             stats_all = np.zeros(len(self.model.metrics)+1)
@@ -75,8 +75,8 @@ class MergedModel:
                 if(epoch % 10 == 9):
                     print(stats)
             print(stats_all, batches_count)
-
-
+    
+    
     def predict(self, A_test_buckets, X_test_buckets, y_test_buckets, batch_size):
         y_test_pred = np.array([]).reshape(0, 24)
         for A_test, X_test, y_test in zip(A_test_buckets, X_test_buckets, y_test_buckets):
@@ -85,3 +85,8 @@ class MergedModel:
                 y_test_pred = np.concatenate((y_test_pred, y_pred), axis=0)
         return y_test_pred
 
+
+
+# from MergedModel import MergedModel
+# model = MergedModel(24, 48, 24, 26, 7, 24, 12)
+# fm = MergedModelFunctional(24, 48, 24, 26, 7, 24, 12)

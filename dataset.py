@@ -5,8 +5,9 @@ import numpy as np
 NUM_CLASSES = 24
 MAX_SEQUENCE_LENGTH = 17
 
-trainset_filename = "./smalldf.csv"
+trainset_filename = "./df.csv"
 testset_filename = "./testdf.csv"
+print(trainset_filename, testset_filename)
 
 
 
@@ -56,6 +57,9 @@ def make_buckets_dataset(df_tmax_groups, df_attr_groups, ys):
 
 
 
+"""
+remove all rows for all ids that never purchased anything
+"""
 def df_remove_non_buyers(df):
     print("non-buyers removed")
     ys = df.columns.tolist()[-24:]
@@ -64,6 +68,7 @@ def df_remove_non_buyers(df):
     df_sums = df_sums.loc[df_sums["y_sum"] > 0]
     df.drop(["y_sum"], axis=1, inplace=True)
     return pd.merge(df_sums, df, how="inner", on=["id"])
+
 
 
 def load_trainset(max_month=0, cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], remove_non_buyers=False):
@@ -110,6 +115,8 @@ def load_testset(month=18, cols=["t", "sex", "age", "seniority", "is_primary", "
         df = pd.read_csv(trainset_filename)
         df = df.loc[(df["id"].isin(testdf["id"])) & (df["t"] < month)]
 
+    print(df.isnull().any())
+    print(testdf.isnull().any())
     testdf = pd.concat([df, testdf], ignore_index=True, copy=False)
 
     testdf = df_merge_counts_and_maxs(testdf)
@@ -120,6 +127,8 @@ def load_testset(month=18, cols=["t", "sex", "age", "seniority", "is_primary", "
 
     testdf_attr_groups = []
     print(testdf.notnull().values.all())
+    print(df.isnull().any())
+    print(testdf.isnull().any())
     for i in range(2, MAX_SEQUENCE_LENGTH + 2):
         testdf_attr_groups.append(testdf.loc[(testdf["t_count"] == i) & (testdf["t"] == month)].sort_values(["id"])[cols])
 

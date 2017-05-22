@@ -5,6 +5,7 @@ import numpy as np
 import dataset
 from functions import *
 from MergedModel import MergedModel
+from MergedModelFunctional import MergedModelFunctional
 
 from keras import optimizers
 
@@ -27,14 +28,14 @@ attr_dim = 7
 data_dim = 24#128
 merged_data_dim = 12
 
-model = MergedModel(
+model = MergedModelFunctional(
     a_output_length, x_output_length, output_length, 
     input_dim, attr_dim, 
     data_dim, merged_data_dim)
     
 model.compile(
     loss=bin_crossentropy_true_only, 
-    optimizer=optimizers.RMSprop(lr=0.001), 
+    optimizer=optimizers.RMSprop(lr=0.01), 
     metrics=[in_top_k_loss, 'binary_crossentropy', 'mean_squared_error'])
 
 
@@ -56,4 +57,6 @@ print(ids_test_buckets.shape)
 
 print(time.strftime("%H:%M:%S", time.localtime()))
 y_test_pred = model.predict(A_test_buckets, X_test_buckets, y_test_buckets, batch_size)
-np.savetxt("./res.csv", np.concatenate((ids_test_buckets, y_test_pred), axis=1), delimiter=",")
+np.savetxt("./res10.csv", np.concatenate((ids_test_buckets, y_test_pred), axis=1), delimiter=",")
+
+model.model.save("./mmf10.h5")
