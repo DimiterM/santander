@@ -88,7 +88,7 @@ def load_trainset(max_month=0, cols=["t", "sex", "age", "seniority", "is_primary
         df_tmax_groups.append(df.loc[df["t_count"] == i].sort_values(["id", "t"]))
     
     df_attr_groups = []
-    print(df.notnull().values.all())
+    # print(df.notnull().values.all())
     for i in range(2, MAX_SEQUENCE_LENGTH + 1):
         df_attr_groups.append(df.loc[(df["t_count"] == i) & (df["t_max"] == df["t"])].sort_values(["id"])[cols])
     
@@ -115,8 +115,6 @@ def load_testset(month=18, cols=["t", "sex", "age", "seniority", "is_primary", "
         df = pd.read_csv(trainset_filename)
         df = df.loc[(df["id"].isin(testdf["id"])) & (df["t"] < month)]
 
-    print(df.isnull().any())
-    print(testdf.isnull().any())
     testdf = pd.concat([df, testdf], ignore_index=True, copy=False)
 
     testdf = df_merge_counts_and_maxs(testdf)
@@ -126,9 +124,7 @@ def load_testset(month=18, cols=["t", "sex", "age", "seniority", "is_primary", "
         testdf_tmax_groups.append(testdf.loc[testdf["t_count"] == i].sort_values(["id", "t"]))
 
     testdf_attr_groups = []
-    print(testdf.notnull().values.all())
-    print(df.isnull().any())
-    print(testdf.isnull().any())
+    # print(testdf.isnull().sum())
     for i in range(2, MAX_SEQUENCE_LENGTH + 2):
         testdf_attr_groups.append(testdf.loc[(testdf["t_count"] == i) & (testdf["t"] == month)].sort_values(["id"])[cols])
 
