@@ -1,6 +1,7 @@
 *.csv
 *.zip
 *.h5
+*.hdf5
 data/
 models/
 

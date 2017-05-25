@@ -21,6 +21,7 @@ class MergedModelFunctional:
     
     """
     a_output_length - .
+    x_dropout_rate - .
     x_output_length - .
     output_length - .
     input_dim - .
@@ -29,7 +30,7 @@ class MergedModelFunctional:
     merged_data_dim - .
     """
     def __init__(self, 
-        a_output_length, x_output_length, 
+        a_output_length, x_dropout_rate, x_output_length, 
         output_length, input_dim, 
         attr_dim, data_dim, merged_data_dim
         ):
@@ -41,7 +42,7 @@ class MergedModelFunctional:
             activation='sigmoid', recurrent_activation='hard_sigmoid', return_sequences=False)(x_input)
         # x_model = BatchNormalization()(x_model)
         # x_model = Activation('sigmoid')(x_model)
-        x_model = Dropout(0.2)(x_model)
+        x_model = Dropout(x_dropout_rate)(x_model)
         x_model = Dense(x_output_length, activation='softmax')(x_model)
         
         self.model = keras.layers.concatenate([a_model, x_model])
@@ -77,13 +78,24 @@ class MergedModelFunctional:
             print(stats_all, batches_count)
     
     
-    def predict(self, A_test_buckets, X_test_buckets, y_test_buckets, batch_size):
+    def predict(self, A_test_buckets, X_test_buckets, batch_size):
         y_test_pred = np.array([]).reshape(0, 24)
-        for A_test, X_test, y_test in zip(A_test_buckets, X_test_buckets, y_test_buckets):
-            if A_test.size > 0 and X_test.size > 0 and y_test.size > 0:
+        for A_test, X_test in zip(A_test_buckets, X_test_buckets):
+            if A_test.size > 0 and X_test.size > 0:
                 y_pred = self.model.predict([A_test, X_test], batch_size=batch_size)
                 y_test_pred = np.concatenate((y_test_pred, y_pred), axis=0)
         return y_test_pred
+    
+    
+    def test(self, A_test_buckets, X_test_buckets, y_test_buckets):
+        stats_all = np.zeros(len(self.model.metrics)+1)
+        examples_count = 0
+        for A_test, X_test, y_test in zip(A_test_buckets, X_test_buckets, y_test_buckets):
+            for A, X, y in zip(A_test, X_test, y_test):
+                stats = self.model.test_on_batch(x=[np.array([A]), np.array([X])], y=np.array([y])) # batch of 1
+                stats_all = stats_all + stats
+                examples_count += 1
+        print(stats_all, examples_count)
 
 
 
