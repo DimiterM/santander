@@ -11,7 +11,7 @@ from keras import optimizers
 
 
 print(time.strftime("%H:%M:%S", time.localtime()))
-last_month = 17
+last_month = 16
 attr_cols = ["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"]
 remove_non_buyers = False
 A_buckets, X_buckets, y_buckets = dataset.load_trainset(max_month=last_month, cols=attr_cols, remove_non_buyers=remove_non_buyers)
@@ -36,17 +36,18 @@ model = MergedModelFunctional(
     data_dim, merged_data_dim)
     
 model.compile(
-    loss=bin_crossentropy_true_only, 
-    optimizer=optimizers.RMSprop(lr=0.01), 
-    metrics=[in_top_k_loss, 'binary_crossentropy', 'mean_squared_error'])
+    loss='binary_crossentropy', 
+    optimizer=optimizers.RMSprop(lr=0.001), 
+    metrics=[bin_crossentropy_true_only, in_top_k_loss, 'binary_crossentropy', 'mean_squared_error'])
 
 
 print(time.strftime("%H:%M:%S", time.localtime()))
-num_epochs = 100
+num_epochs = 30
 batch_size = 256
 model.train(A_buckets, X_buckets, y_buckets, num_epochs, batch_size)
 
 
+print(model.checkpointer.file_index_log)
 print(time.strftime("%H:%M:%S", time.localtime()))
 A_buckets, X_buckets, y_buckets = None, None, None
 A_test_buckets, X_test_buckets, y_test_buckets, ids_test_buckets = dataset.load_testset(month=last_month+1, cols=attr_cols)
@@ -66,8 +67,7 @@ else:
     # test data is the testset
     print("predicting")
     y_test_pred = model.predict(A_test_buckets, X_test_buckets, batch_size)
-    # np.savetxt("./res10.csv", np.concatenate((ids_test_buckets, y_test_pred), axis=1), delimiter=",")
+    np.savetxt("./res10.csv", np.concatenate((ids_test_buckets, y_test_pred), axis=1), delimiter=",")
 
-# model.model.save("./mmf10.h5")
-# "%M-%d_%H:%M"
-# model.model.save("./{epoch:02d}.h5")
+print(time.strftime("%H:%M:%S", time.localtime()))
+model.model.save("./mmf_"+time.strftime("%m-%d_%H-%M_", time.localtime())+".h5")

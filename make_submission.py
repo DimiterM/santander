@@ -1,6 +1,8 @@
 # pip install 'keras==1.2.2'
+import time
 import numpy as np
 import pandas as pd
+print(time.strftime("%H:%M:%S", time.localtime()))
 res = pd.read_csv("./res.csv", header=None)
 # row_multiplier = 0.5 / (res.mean().as_matrix()[1:] + (2 * res.std().as_matrix()[1:]))
 # row_multiplier = 0.5 / (res.sum(0) / (res > 0).sum(0)).as_matrix()[1:]
@@ -33,3 +35,5 @@ for row in res:
 
 with open("submission.csv", 'w', newline='') as f:
     f.write( '\r\n'.join(["ncodpers,added_products"] + ixs_recommendation_rows) )
+
+print(time.strftime("%H:%M:%S", time.localtime()))

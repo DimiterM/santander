@@ -21,6 +21,7 @@ class MergedModel:
 
     """
     a_output_length - .
+    x_dropout_rate - .
     x_output_length - .
     output_length - .
     input_dim - .
@@ -29,7 +30,7 @@ class MergedModel:
     merged_data_dim - .
     """
     def __init__(self, 
-        a_output_length, x_output_length, 
+        a_output_length, x_dropout_rate, x_output_length, 
         output_length, input_dim, 
         attr_dim, data_dim, merged_data_dim
         ):
@@ -41,7 +42,7 @@ class MergedModel:
             activation='sigmoid', inner_activation='hard_sigmoid', return_sequences=False))
         # x_input.add(BatchNormalization()) #
         # x_input.add(Activation('sigmoid')) #
-        x_input.add(Dropout(0.2))
+        x_input.add(Dropout(x_dropout_rate))
         x_input.add(Dense(x_output_length, activation='softmax'))
 
         self.model = Sequential()
