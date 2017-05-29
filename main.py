@@ -68,7 +68,7 @@ else:
     # test data is the testset
     print("predicting")
     y_test_pred = model.predict(A_test_buckets, X_test_buckets, batch_size)
-    np.savetxt("./res10.csv", np.concatenate((ids_test_buckets, y_test_pred), axis=1), delimiter=",")
+    np.savetxt("./res"+time.strftime("%m-%d_%H-%M", time.localtime())+".csv", np.concatenate((ids_test_buckets, y_test_pred), axis=1), delimiter=",")
 
 print(time.strftime("%H:%M:%S", time.localtime()))
-model.model.save("./mmf_"+time.strftime("%m-%d_%H-%M_", time.localtime())+".h5")
+model.model.save("./mmf_"+time.strftime("%m-%d_%H-%M", time.localtime())+".h5")
