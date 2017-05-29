@@ -91,7 +91,7 @@ if __name__ == '__main__':
     best_run, best_model = optim.minimize(model=merged_model,
                                           data=data,
                                           algo=tpe.suggest,
-                                          max_evals=1,
+                                          max_evals=20,
                                           trials=Trials())
     
     print("Evalutation of best performing model:")
