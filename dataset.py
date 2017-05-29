@@ -41,7 +41,7 @@ def make_buckets_dataset(df_tmax_groups, df_attr_groups, ys):
             df_tmax_groups[i] = df_tmax_groups[i].loc[:, ['t', 't_month']+ys].as_matrix()
             df_tmax_groups[i] = df_tmax_groups[i].reshape(df_tmax_groups[i].shape[0]//(i+2), i+2, len(['t', 't_month']+ys))
             df_attr_groups[i] = df_attr_groups[i].as_matrix()
-
+    
     X_buckets = []
     y_buckets = []
     A_buckets = []
@@ -50,7 +50,7 @@ def make_buckets_dataset(df_tmax_groups, df_attr_groups, ys):
             X_buckets.append(g[:, :-1, :])
             y_buckets.append(g[:, -1:, 2:].reshape(g.shape[0], g.shape[2] - 2))
             A_buckets.append(a)
-
+    
     df_tmax_groups, df_attr_groups = None, None
     
     return A_buckets, X_buckets, y_buckets, ids_buckets
@@ -71,12 +71,30 @@ def df_remove_non_buyers(df):
 
 
 
-def load_trainset(max_month=0, cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], remove_non_buyers=False):
+"""
+normalize attributes with huge values
+"""
+def get_z_score_stats(df, cols_to_norm=["age", "seniority", "income"]):
+    stats = df[cols_to_norm].describe()
+    return {"mean": stats.loc["mean",:], "std": stats.loc["std",:]}
+
+def normalize_cols(df, z_score_stats, cols_to_norm=["age", "seniority", "income"]):
+    for col in cols_to_norm:
+        df[col] = (df[col] - z_score_stats["mean"][col]) / z_score_stats["std"][col]
+    return df
+
+
+
+def load_trainset(max_month=0, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], remove_non_buyers=False):
     df = pd.read_csv(trainset_filename)
     
     if max_month > 0 and max_month < MAX_SEQUENCE_LENGTH:
         print("max_month: " + str(max_month))
         df = df.loc[df["t"] <= max_month]
+    
+    df.loc[df["seniority"] < 0, "seniority"] = 0
+    z_score_stats = get_z_score_stats(df)
+    df = normalize_cols(df, z_score_stats)
     
     if remove_non_buyers:
         df = df_remove_non_buyers(df)
@@ -90,7 +108,7 @@ def load_trainset(max_month=0, cols=["t", "sex", "age", "seniority", "is_primary
     df_attr_groups = []
     # print(df.notnull().values.all())
     for i in range(2, MAX_SEQUENCE_LENGTH + 1):
-        df_attr_groups.append(df.loc[(df["t_count"] == i) & (df["t_max"] == df["t"])].sort_values(["id"])[cols])
+        df_attr_groups.append(df.loc[(df["t_count"] == i) & (df["t_max"] == df["t"])].sort_values(["id"])[attr_cols])
     
     ys = df.columns.tolist()[-NUM_CLASSES:]
     df = None
@@ -100,7 +118,7 @@ def load_trainset(max_month=0, cols=["t", "sex", "age", "seniority", "is_primary
 
 
 
-def load_testset(month=18, cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"]):
+def load_testset(month=18, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"]):
     testdf = pd.DataFrame()
     df = pd.DataFrame()
     if month > MAX_SEQUENCE_LENGTH:
@@ -114,6 +132,12 @@ def load_testset(month=18, cols=["t", "sex", "age", "seniority", "is_primary", "
         testdf = testdf.loc[testdf["t"] == month]
         df = pd.read_csv(trainset_filename)
         df = df.loc[(df["id"].isin(testdf["id"])) & (df["t"] < month)]
+    
+    df.loc[df["seniority"] < 0, "seniority"] = 0
+    testdf.loc[testdf["seniority"] < 0, "seniority"] = 0
+    z_score_stats = get_z_score_stats(df)
+    df = normalize_cols(df, z_score_stats)
+    testdf = normalize_cols(testdf, z_score_stats)
 
     testdf = pd.concat([df, testdf], ignore_index=True, copy=False)
 
@@ -126,7 +150,7 @@ def load_testset(month=18, cols=["t", "sex", "age", "seniority", "is_primary", "
     testdf_attr_groups = []
     # print(testdf.isnull().sum())
     for i in range(2, MAX_SEQUENCE_LENGTH + 2):
-        testdf_attr_groups.append(testdf.loc[(testdf["t_count"] == i) & (testdf["t"] == month)].sort_values(["id"])[cols])
+        testdf_attr_groups.append(testdf.loc[(testdf["t_count"] == i) & (testdf["t"] == month)].sort_values(["id"])[attr_cols])
 
     ys = df.columns.tolist()[-NUM_CLASSES:]
     df, testdf = None, None

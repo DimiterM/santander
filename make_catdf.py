@@ -37,13 +37,13 @@ dummies = pd.get_dummies(df["channel_1"], prefix="channel_1")
 dummies.columns = [cn.replace(".0", "") for cn in dummies.columns.tolist()]
 catdf = pd.concat([catdf, dummies], axis=1)
 
-dummies = pd.get_dummies(df["channel_2"], prefix="channel_2")
-dummies.columns = [cn.replace(".0", "") for cn in dummies.columns.tolist()]
-catdf = pd.concat([catdf, dummies], axis=1)
-
-dummies = pd.get_dummies(df["province"], prefix="province")
-dummies.columns = [cn.replace(".0", "") for cn in dummies.columns.tolist()]
-catdf = pd.concat([catdf, dummies], axis=1)
+# dummies = pd.get_dummies(df["channel_2"], prefix="channel_2")
+# dummies.columns = [cn.replace(".0", "") for cn in dummies.columns.tolist()]
+# catdf = pd.concat([catdf, dummies], axis=1)
+# 
+# dummies = pd.get_dummies(df["province"], prefix="province")
+# dummies.columns = [cn.replace(".0", "") for cn in dummies.columns.tolist()]
+# catdf = pd.concat([catdf, dummies], axis=1)
 
 dummies = pd.get_dummies(df["segment"], prefix="segment")
 dummies.columns = [cn.replace(".0", "") for cn in dummies.columns.tolist()]
