@@ -51,7 +51,7 @@ model.train(A_buckets, X_buckets, y_buckets, num_epochs, batch_size)
 print(model.checkpointer.file_index_log)
 print(time.strftime("%H:%M:%S", time.localtime()))
 A_buckets, X_buckets, y_buckets = None, None, None
-A_test_buckets, X_test_buckets, y_test_buckets, ids_test_buckets = dataset.load_testset(month=last_month+1, attr_cols=attr_cols)
+A_test_buckets, X_test_buckets, y_test_buckets, ids_test_buckets = dataset.load_testset(last_month=last_month, next_month=last_month+1, attr_cols=attr_cols)
 
 for a, x, y in zip(A_test_buckets, X_test_buckets, y_test_buckets):
     print(a.shape, x.shape, y.shape)
