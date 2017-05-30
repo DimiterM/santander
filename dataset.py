@@ -137,17 +137,20 @@ def load_testset(last_month=17, next_month=18, attr_cols=["t", "sex", "age", "se
         testdf = testdf.loc[testdf["t"] == next_month]
     
     df = pd.DataFrame()
+    z_score_stats = dict()
     if last_month <= 0 or last_month >= MAX_SEQUENCE_LENGTH:
         print("trainset loaded")
         df = pd.read_csv(trainset_filename)
+        z_score_stats = get_z_score_stats(df)
         df = df.loc[df["id"].isin(testdf["id"])]
     else:
         print("month " + str(last_month) + " trainset loaded")
         df = pd.read_csv(trainset_filename)
-        df = df.loc[(df["id"].isin(testdf["id"])) & (df["t"] <= last_month)]
+        df = df.loc[df["t"] <= last_month]
+        z_score_stats = get_z_score_stats(df)
+        df = df.loc[df["id"].isin(testdf["id"])]
     
     testdf.loc[testdf["seniority"] < 0, "seniority"] = 0
-    z_score_stats = get_z_score_stats(df)
     testdf = normalize_cols(testdf, z_score_stats)
     
     ys = df.columns.tolist()[-NUM_CLASSES:]

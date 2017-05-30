@@ -6,20 +6,7 @@ from dataset import *
 
 
 
-def load_max_trainset(max_month=0, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], remove_non_buyers=False):
-    df = pd.read_csv(trainset_filename)
-    
-    if max_month > 0 and max_month < MAX_SEQUENCE_LENGTH:
-        print("max_month: " + str(max_month))
-        df = df.loc[df["t"] <= max_month]
-    
-    df.loc[df["seniority"] < 0, "seniority"] = 0
-    z_score_stats = get_z_score_stats(df)
-    df = normalize_cols(df, z_score_stats)
-    
-    if remove_non_buyers:
-        df = df_remove_non_buyers(df)
-    
+def build_max_dataset(df, attr_cols):
     # find last month for each id
     df_maxs = df[["id", "t"]].groupby("id").max()
     df_maxs["id"] = df_maxs.index
@@ -45,7 +32,7 @@ def load_max_trainset(max_month=0, attr_cols=["t", "sex", "age", "seniority", "i
     df = df.loc[df["t"] == df["t_max2"]]
     df = df[["id"]+ys]
     
-    X = pd.merge(dfa, pd.merge(df, df_maxed, how="inner", on=["id"]), how="inner", on=["id"])
+    X = pd.merge(dfa, pd.merge(df, df_maxed, how="inner", on=["id"]), how="outer", on=["id"]).fillna(value=0)
     y = dfy
     i = X[["id"]]
     X = X[attr_cols + X.columns.tolist()[-2*NUM_CLASSES:]]
@@ -54,17 +41,7 @@ def load_max_trainset(max_month=0, attr_cols=["t", "sex", "age", "seniority", "i
 
 
 
-def load_max_testset(last_month=17, next_month=18, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"]):
-    pass
-
-
-
-###
-
-
-def load_concat_trainset(max_month=0, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], 
-    lags=[1, 2, 3, 4, 5, 6, 9, 12], remove_non_buyers=False):
-    
+def load_max_trainset(max_month=0, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], remove_non_buyers=False):
     df = pd.read_csv(trainset_filename)
     
     if max_month > 0 and max_month < MAX_SEQUENCE_LENGTH:
@@ -78,6 +55,51 @@ def load_concat_trainset(max_month=0, attr_cols=["t", "sex", "age", "seniority",
     if remove_non_buyers:
         df = df_remove_non_buyers(df)
     
+    return build_max_dataset(df, attr_cols)
+
+
+
+def load_max_testset(last_month=17, next_month=18, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"]):
+    testdf = pd.DataFrame()
+    if next_month > MAX_SEQUENCE_LENGTH:
+        print("testset loaded")
+        testdf = pd.read_csv(testset_filename)
+    else:
+        print("month " + str(next_month) + " testset loaded")
+        testdf = pd.read_csv(trainset_filename)
+        testdf = testdf.loc[testdf["t"] == next_month]
+    
+    df = pd.DataFrame()
+    z_score_stats = dict()
+    if last_month <= 0 or last_month >= MAX_SEQUENCE_LENGTH:
+        print("trainset loaded")
+        df = pd.read_csv(trainset_filename)
+        z_score_stats = get_z_score_stats(df)
+        df = df.loc[df["id"].isin(testdf["id"])]
+    else:
+        print("month " + str(last_month) + " trainset loaded")
+        df = pd.read_csv(trainset_filename)
+        df = df.loc[df["t"] <= last_month]
+        z_score_stats = get_z_score_stats(df)
+        df = df.loc[df["id"].isin(testdf["id"])]
+    
+    testdf.loc[testdf["seniority"] < 0, "seniority"] = 0
+    testdf = normalize_cols(testdf, z_score_stats)
+    
+    ys = df.columns.tolist()[-NUM_CLASSES:]
+    df = df[['id'] + attr_cols + ys]
+    df_cols = df.columns.tolist()
+    df = pd.concat([df, testdf[['id'] + attr_cols + ([] if next_month > MAX_SEQUENCE_LENGTH else ys)]], ignore_index=True, copy=False)
+    df = df[df_cols] # bug fix: concat unwantedly sorts DataFrame column names if they differ #4588
+    
+    return build_max_dataset(df, attr_cols)
+
+
+
+###
+
+
+def build_concat_dataset(df, attr_cols, lags):
     df_maxs = df[["id", "t"]].groupby("id").max()
     df_maxs["id"] = df_maxs.index
     df_maxs.columns = ["t_max", "id"]
@@ -101,9 +123,61 @@ def load_concat_trainset(max_month=0, attr_cols=["t", "sex", "age", "seniority",
 
 
 
+def load_concat_trainset(max_month=0, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], 
+    lags=[1, 2, 3, 4, 5, 6, 9, 12], remove_non_buyers=False):
+    
+    df = pd.read_csv(trainset_filename)
+    
+    if max_month > 0 and max_month < MAX_SEQUENCE_LENGTH:
+        print("max_month: " + str(max_month))
+        df = df.loc[df["t"] <= max_month]
+    
+    df.loc[df["seniority"] < 0, "seniority"] = 0
+    z_score_stats = get_z_score_stats(df)
+    df = normalize_cols(df, z_score_stats)
+    
+    if remove_non_buyers:
+        df = df_remove_non_buyers(df)
+    
+    return build_concat_dataset(df, attr_cols, lags)
+
+
+
 def load_concat_testset(last_month=17, next_month=18, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], 
     lags=[1, 2, 3, 4, 5, 6, 9, 12]):
-    pass
-
+    testdf = pd.DataFrame()
+    if next_month > MAX_SEQUENCE_LENGTH:
+        print("testset loaded")
+        testdf = pd.read_csv(testset_filename)
+    else:
+        print("month " + str(next_month) + " testset loaded")
+        testdf = pd.read_csv(trainset_filename)
+        testdf = testdf.loc[testdf["t"] == next_month]
+    
+    df = pd.DataFrame()
+    z_score_stats = dict()
+    if last_month <= 0 or last_month >= MAX_SEQUENCE_LENGTH:
+        print("trainset loaded")
+        df = pd.read_csv(trainset_filename)
+        z_score_stats = get_z_score_stats(df)
+        df = df.loc[df["id"].isin(testdf["id"])]
+    else:
+        print("month " + str(last_month) + " trainset loaded")
+        df = pd.read_csv(trainset_filename)
+        df = df.loc[df["t"] <= last_month]
+        z_score_stats = get_z_score_stats(df)
+        df = df.loc[df["id"].isin(testdf["id"])]
+    
+    testdf.loc[testdf["seniority"] < 0, "seniority"] = 0
+    testdf = normalize_cols(testdf, z_score_stats)
+    
+    ys = df.columns.tolist()[-NUM_CLASSES:]
+    df = df[['id'] + attr_cols + ys]
+    df_cols = df.columns.tolist()
+    df = pd.concat([df, testdf[['id'] + attr_cols + ([] if next_month > MAX_SEQUENCE_LENGTH else ys)]], ignore_index=True, copy=False)
+    df = df[df_cols] # bug fix: concat unwantedly sorts DataFrame column names if they differ #4588
+    
+    return build_concat_dataset(df, attr_cols, lags)
+    
 
 #
