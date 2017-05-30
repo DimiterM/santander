@@ -144,10 +144,12 @@ def load_testset(month=18, attr_cols=["t", "sex", "age", "seniority", "is_primar
     testdf.loc[testdf["seniority"] < 0, "seniority"] = 0
     z_score_stats = get_z_score_stats(df)
     testdf = normalize_cols(testdf, z_score_stats)
-
+    
     ys = df.columns.tolist()[-NUM_CLASSES:]
     df = df[['id', 't', 't_month']+ys]
+    df_cols = df.columns.tolist()
     df = pd.concat([df, testdf[['id', 't', 't_month']+([] if month > MAX_SEQUENCE_LENGTH else ys)]], ignore_index=True, copy=False)
+    df = df[df_cols] # bug fix: concat unwantedly sorts DataFrame column names if they differ #4588
     
     testdf = df_merge_counts_and_maxs(testdf, df)
     # print("testdfxs", testdf["xs"].columns.tolist())
