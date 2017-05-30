@@ -5,7 +5,7 @@ import numpy as np
 NUM_CLASSES = 24
 MAX_SEQUENCE_LENGTH = 17
 
-trainset_filename = "./smallcatdf.csv"
+trainset_filename = "./catdf.csv"
 testset_filename = "./testcatdf.csv"
 print(trainset_filename, testset_filename)
 
