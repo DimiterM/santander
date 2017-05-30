@@ -178,3 +178,38 @@ def load_testset(last_month=17, next_month=18, attr_cols=["t", "sex", "age", "se
     return make_buckets_dataset(testdf_tmax_groups, testdf_attr_groups, ys)
 
 
+
+
+
+"""
+pad bucketed dataset to make one dataset with constant sequence length
+"""
+def pad_dataset_buckets(A_buckets, X_buckets, y_buckets, seq_len=MAX_SEQUENCE_LENGTH):
+    A = np.array([]).reshape(0, A_buckets[0].shape[-1])
+    X = np.array([]).reshape(0, seq_len, X_buckets[0].shape[-1])
+    y = np.array([]).reshape(0, y_buckets[0].shape[-1])
+    
+    for i in range(len(X_buckets)):
+        t = X_buckets[i].shape[1]
+        X_buckets[i] = np.pad( X_buckets[i] , ( (0,0), (seq_len - t,0), (0,0) ) , mode="constant" )
+        
+        A = np.concatenate((A, A_buckets[i]), axis=0)
+        X = np.concatenate((X, X_buckets[i]), axis=0)
+        y = np.concatenate((y, y_buckets[i]), axis=0)
+        A_buckets[i], X_buckets[i], y_buckets[i] = None, None, None
+    
+    return A, X, y
+
+
+
+def load_padded_trainset(max_month=0, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], remove_non_buyers=False):
+    A_buckets, X_buckets, y_buckets = load_trainset(max_month, attr_cols, remove_non_buyers)
+    return pad_dataset_buckets(A_buckets, X_buckets, y_buckets)
+
+
+
+def load_padded_testset(last_month=17, next_month=18, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"]):
+    A_buckets, X_buckets, y_buckets, ids = load_testset(last_month, next_month, attr_cols)
+    return pad_dataset_buckets(A_buckets, X_buckets, y_buckets) + (ids,)
+
+
