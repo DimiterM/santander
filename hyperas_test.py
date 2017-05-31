@@ -30,13 +30,17 @@ from keras.layers import Input, Merge
 
 def data():
     last_month = 16
-    attr_cols = ["t", "sex", "age", "seniority", "is_primary", "is_domestic"]##, "income"]
+    attr_cols = ["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"]
+    # attr_cols = ['t', 't_month', 'sex', 'age', 'seniority_new', 'seniority', 'is_primary', 'is_domestic', 'is_foreigner', 'is_dead', 'is_active', 'income', 
+    #     'employee_bit_notN', 'country_num', 'customer_type_bit_not1', 'customer_rel_I', 'customer_rel_A', 'channel_0_0', 'channel_0_1', 'channel_0_2', 
+    #     'channel_1_0', 'channel_1_1', 'channel_1_2', 'channel_1_3', 'channel_1_4', 'channel_1_5', 'channel_1_6', 'channel_1_7', 'channel_1_8', 
+    #     'segment_1', 'segment_2', 'segment_3']
     remove_non_buyers = False
     
-    A_buckets, X_buckets, y_buckets = dataset.load_trainset(max_month=last_month, cols=attr_cols, remove_non_buyers=remove_non_buyers)
+    A_buckets, X_buckets, y_buckets = dataset.load_trainset(max_month=last_month, attr_cols=attr_cols, remove_non_buyers=remove_non_buyers)
     A_buckets, X_buckets, y_buckets = A_buckets[-1], X_buckets[-1], y_buckets[-1]
     
-    A_test_buckets, X_test_buckets, y_test_buckets, _ = dataset.load_testset(month=last_month+1, cols=attr_cols)
+    A_test_buckets, X_test_buckets, y_test_buckets, _ = dataset.load_testset(last_month=last_month, next_month=last_month+1, attr_cols=attr_cols)
     A_test_buckets, X_test_buckets, y_test_buckets = A_test_buckets[-1], X_test_buckets[-1], y_test_buckets[-1]
     
     return A_buckets, X_buckets, y_buckets, A_test_buckets, X_test_buckets, y_test_buckets
@@ -75,7 +79,7 @@ def merged_model(A_buckets, X_buckets, y_buckets, A_test_buckets, X_test_buckets
 
     model.fit([A_buckets, X_buckets], y_buckets,
               batch_size={{choice([128, 256, 512])}},
-              epochs=15,
+              epochs=20,
               verbose=2,
               validation_data=([A_test_buckets, X_test_buckets], y_test_buckets))
     score = model.evaluate([A_test_buckets, X_test_buckets], y_test_buckets, verbose=0)
