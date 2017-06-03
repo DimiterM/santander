@@ -37,14 +37,15 @@ def df_merge_counts_and_maxs(dfa, dfx):
 """
 build list of numpy arrays (buckets) for all sequence lengths
 """
-def make_buckets_dataset(df_tmax_groups, df_attr_groups, ys):
+def make_buckets_dataset(df_tmax_groups, df_attr_groups, ys, include_time_dim_in_X):
+    t_cols = ['t', 't_month'] if include_time_dim_in_X else []
     ids_buckets = np.array([]).reshape(0, 1)
     for i in range(len(df_tmax_groups)):
         if not df_tmax_groups[i].empty:
             ids = df_tmax_groups[i].iloc[:, 1:2]["id"].unique()
             ids_buckets = np.concatenate((ids_buckets, ids.reshape(ids.size, 1)), axis=0)
-            df_tmax_groups[i] = df_tmax_groups[i].loc[:, ['t', 't_month']+ys].as_matrix()
-            df_tmax_groups[i] = df_tmax_groups[i].reshape(df_tmax_groups[i].shape[0]//(i+2), i+2, len(['t', 't_month']+ys))
+            df_tmax_groups[i] = df_tmax_groups[i].loc[:, t_cols+ys].as_matrix()
+            df_tmax_groups[i] = df_tmax_groups[i].reshape(df_tmax_groups[i].shape[0]//(i+2), i+2, len(t_cols+ys))
             df_attr_groups[i] = df_attr_groups[i].as_matrix()
     
     X_buckets = []
@@ -53,7 +54,7 @@ def make_buckets_dataset(df_tmax_groups, df_attr_groups, ys):
     for g, a in zip(df_tmax_groups, df_attr_groups):
         if g.size > 0:
             X_buckets.append(g[:, :-1, :])
-            y_buckets.append(g[:, -1:, 2:].reshape(g.shape[0], g.shape[2] - 2))
+            y_buckets.append(g[:, -1:, len(t_cols):].reshape(g.shape[0], g.shape[2] - len(t_cols)))
             A_buckets.append(a)
     
     df_tmax_groups, df_attr_groups = None, None
@@ -90,7 +91,28 @@ def normalize_cols(df, z_score_stats, cols_to_norm=["age", "seniority", "income"
 
 
 
-def load_trainset(max_month=0, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], remove_non_buyers=False):
+"""
+scale "t" & "t_month" to be in [0;1] interval with max value at current month;
+"t" is decreasing linearly from current month backwards to 0;
+"t_month" is decreasing (triangular distribution) on both sides 
+from max value at next month until min value at +6 months and -6 months from next month
+"""
+def scale_df_time_dim(df, t_month):
+    df["t"] = df["t"] / t_month
+    month = (t_month+1) % 12 if (t_month+1) % 12 != 0 else 12
+    df["t_month_d"] = df["t_month"] - month
+    df.loc[df["t_month_d"] <= -6, "t_month_d"] = df["t_month_d"] + 12
+    df.loc[df["t_month_d"] > 6, "t_month_d"] = df["t_month_d"] - 12
+    df.loc[df["t_month_d"] <= 0, "t_month"] = ((df["t_month_d"] + 6) / 6) + 0.1
+    df.loc[df["t_month_d"] > 0, "t_month"] = ((6 - df["t_month_d"]) / 6) + 0.1
+    df.drop(["t_month_d"], axis=1, inplace=True)
+    return df
+
+
+
+def load_trainset(max_month=17, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], remove_non_buyers=False, 
+    scale_time_dim=False, include_time_dim_in_X=True):
+    
     df = pd.read_csv(trainset_filename)
     
     if max_month > 0 and max_month < MAX_SEQUENCE_LENGTH:
@@ -103,6 +125,9 @@ def load_trainset(max_month=0, attr_cols=["t", "sex", "age", "seniority", "is_pr
     
     if remove_non_buyers:
         df = df_remove_non_buyers(df)
+    
+    if scale_time_dim:
+        df = scale_df_time_dim(df, max_month)
     
     df = df_merge_counts_and_maxs(df[df.columns.tolist()[:-NUM_CLASSES]], df[['id', 't', 't_month']+df.columns.tolist()[-NUM_CLASSES:]])
     # print("dfxs", df["xs"].columns.tolist())
@@ -121,12 +146,14 @@ def load_trainset(max_month=0, attr_cols=["t", "sex", "age", "seniority", "is_pr
     ys = df["xs"].columns.tolist()[-NUM_CLASSES:]
     df = None
     
-    A_buckets, X_buckets, y_buckets, _ = make_buckets_dataset(df_tmax_groups, df_attr_groups, ys)
+    A_buckets, X_buckets, y_buckets, _ = make_buckets_dataset(df_tmax_groups, df_attr_groups, ys, include_time_dim_in_X)
     return A_buckets, X_buckets, y_buckets
 
 
 
-def load_testset(last_month=17, next_month=18, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"]):
+def load_testset(last_month=17, next_month=18, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], 
+    scale_time_dim=False, include_time_dim_in_X=True):
+    
     testdf = pd.DataFrame()
     if next_month > MAX_SEQUENCE_LENGTH:
         print("testset loaded")
@@ -153,6 +180,10 @@ def load_testset(last_month=17, next_month=18, attr_cols=["t", "sex", "age", "se
     testdf.loc[testdf["seniority"] < 0, "seniority"] = 0
     testdf = normalize_cols(testdf, z_score_stats)
     
+    if scale_time_dim:
+        df = scale_df_time_dim(df, last_month)
+        testdf = scale_df_time_dim(testdf, last_month)
+    
     ys = df.columns.tolist()[-NUM_CLASSES:]
     df = df[['id', 't', 't_month']+ys]
     df_cols = df.columns.tolist()
@@ -175,7 +206,7 @@ def load_testset(last_month=17, next_month=18, attr_cols=["t", "sex", "age", "se
     
     df, testdf = None, None
     
-    return make_buckets_dataset(testdf_tmax_groups, testdf_attr_groups, ys)
+    return make_buckets_dataset(testdf_tmax_groups, testdf_attr_groups, ys, include_time_dim_in_X)
 
 
 
@@ -202,14 +233,18 @@ def pad_dataset_buckets(A_buckets, X_buckets, y_buckets, seq_len=MAX_SEQUENCE_LE
 
 
 
-def load_padded_trainset(max_month=0, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], remove_non_buyers=False):
-    A_buckets, X_buckets, y_buckets = load_trainset(max_month, attr_cols, remove_non_buyers)
+def load_padded_trainset(max_month=0, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], remove_non_buyers=False, 
+    scale_time_dim=False, include_time_dim_in_X=True):
+    
+    A_buckets, X_buckets, y_buckets = load_trainset(max_month, attr_cols, remove_non_buyers, scale_time_dim, include_time_dim_in_X)
     return pad_dataset_buckets(A_buckets, X_buckets, y_buckets)
 
 
 
-def load_padded_testset(last_month=17, next_month=18, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"]):
-    A_buckets, X_buckets, y_buckets, ids = load_testset(last_month, next_month, attr_cols)
+def load_padded_testset(last_month=17, next_month=18, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], 
+    scale_time_dim=False, include_time_dim_in_X=True):
+    
+    A_buckets, X_buckets, y_buckets, ids = load_testset(last_month, next_month, attr_cols, scale_time_dim, include_time_dim_in_X)
     return pad_dataset_buckets(A_buckets, X_buckets, y_buckets) + (ids,)
 
 

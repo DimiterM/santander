@@ -22,26 +22,31 @@ from ModelHistoryCheckpointer import ModelHistoryCheckpointer
 class MergedModelFunctional:
     
     """
-    a_output_length - .
-    x_dropout_rate - .
-    x_output_length - .
     output_length - .
     input_dim - .
     attr_dim - .
-    data_dim - .
+
+    a_hidden_length - .
+    a_output_length - .
+
+    recurrent_dim - .
+    x_dropout_rate - .
+    x_output_length - .
+
     merged_data_dim - .
     """
     def __init__(self, 
-        a_output_length, x_dropout_rate, x_output_length, 
-        output_length, input_dim, 
-        attr_dim, data_dim, merged_data_dim
-        ):
+        output_length, input_dim, attr_dim, 
+        a_hidden_length, a_output_length, 
+        recurrent_dim, x_dropout_rate, x_output_length, 
+        merged_data_dim):
+        
         a_input = Input(shape=(attr_dim,))
-        a_model = Dense(a_output_length, activation='softmax')(a_input)
+        a_model = Dense(a_hidden_length, activation='softmax')(a_input)
+        a_model = Dense(a_output_length, activation='softmax')(a_model)
         
         x_input = Input(shape=(None, input_dim))
-        x_model = LSTM(data_dim,
-            activation='sigmoid', recurrent_activation='hard_sigmoid', return_sequences=False)(x_input)
+        x_model = LSTM(recurrent_dim, activation='tanh', recurrent_activation='hard_sigmoid', return_sequences=False)(x_input)
         # x_model = BatchNormalization()(x_model)
         # x_model = Activation('sigmoid')(x_model)
         x_model = Dropout(x_dropout_rate)(x_model)
