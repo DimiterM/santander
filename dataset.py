@@ -233,11 +233,11 @@ def pad_dataset_buckets(A_buckets, X_buckets, y_buckets, seq_len=MAX_SEQUENCE_LE
 
 
 
-def load_padded_trainset(max_month=0, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], remove_non_buyers=False, 
+def load_padded_trainset(max_month=17, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], remove_non_buyers=False, 
     scale_time_dim=False, include_time_dim_in_X=True):
     
     A_buckets, X_buckets, y_buckets = load_trainset(max_month, attr_cols, remove_non_buyers, scale_time_dim, include_time_dim_in_X)
-    return pad_dataset_buckets(A_buckets, X_buckets, y_buckets)
+    return pad_dataset_buckets(A_buckets, X_buckets, y_buckets, seq_len=max_month)
 
 
 
@@ -245,6 +245,6 @@ def load_padded_testset(last_month=17, next_month=18, attr_cols=["t", "sex", "ag
     scale_time_dim=False, include_time_dim_in_X=True):
     
     A_buckets, X_buckets, y_buckets, ids = load_testset(last_month, next_month, attr_cols, scale_time_dim, include_time_dim_in_X)
-    return pad_dataset_buckets(A_buckets, X_buckets, y_buckets) + (ids,)
+    return pad_dataset_buckets(A_buckets, X_buckets, y_buckets, seq_len=next_month) + (ids,)
 
 
