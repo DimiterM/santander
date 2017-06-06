@@ -48,8 +48,6 @@ class MergedModelFunctional:
         
         x_input = Input(shape=(None, input_dim))
         x_model = LSTM(recurrent_dim, activation='tanh', recurrent_activation='hard_sigmoid', return_sequences=False)(x_input)
-        # x_model = BatchNormalization()(x_model)
-        # x_model = Activation('sigmoid')(x_model)
         x_model = Dropout(x_dropout_rate)(x_model)
         x_model = Dense(x_output_length, activation='softmax')(x_model)
         

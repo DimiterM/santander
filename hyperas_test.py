@@ -63,7 +63,7 @@ def merged_model(A_buckets, X_buckets, y_buckets, A_test_buckets, X_test_buckets
     recurrent_dim = 48
     x_dropout_rate = 0.1
     x_output_length = 48#24
-    merged_data_dim = 12
+    merged_data_dim = 16
 
     a_input = Input(shape=(attr_dim,))
     a_model = Dense(a_hidden_length, activation='softmax')(a_input)
@@ -71,8 +71,6 @@ def merged_model(A_buckets, X_buckets, y_buckets, A_test_buckets, X_test_buckets
     
     x_input = Input(shape=(None, input_dim))
     x_model = LSTM(recurrent_dim, activation='tanh', recurrent_activation='hard_sigmoid', return_sequences=False)(x_input)
-    # x_model = BatchNormalization()(x_model)
-    # x_model = Activation('sigmoid')(x_model)
     x_model = Dropout(x_dropout_rate)(x_model)
     x_model = Dense(x_output_length, activation='softmax')(x_model)
     
@@ -83,11 +81,11 @@ def merged_model(A_buckets, X_buckets, y_buckets, A_test_buckets, X_test_buckets
     model = Model(inputs=[a_input, x_input], outputs=model)
      
     model.compile(loss='binary_crossentropy', metrics=[bin_crossentropy_true_only, in_top_k_loss, 'binary_crossentropy', 'mean_squared_error'],
-        optimizer=choice([optimizers.RMSprop(lr=0.001))
+        optimizer={{choice([optimizers.RMSprop(lr=0.001), optimizers.RMSprop(lr=0.0001), optimizers.RMSprop(lr=0.0005)])}})
 
     model.fit([A_buckets, X_buckets], y_buckets,
         batch_size={{choice([256, 512])}},
-        epochs=15,
+        epochs=30,
         verbose=2,
         validation_data=([A_test_buckets, X_test_buckets], y_test_buckets))
     score = model.evaluate([A_test_buckets, X_test_buckets], y_test_buckets, verbose=0)
@@ -104,7 +102,7 @@ if __name__ == '__main__':
     best_run, best_model = optim.minimize(model=merged_model,
                                           data=data,
                                           algo=tpe.suggest,
-                                          max_evals=10,
+                                          max_evals=6,#10,
                                           trials=trials)
     
     print("Evalutation of best performing model:")
