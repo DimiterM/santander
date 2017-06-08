@@ -7,12 +7,12 @@ import keras.backend as K
 
 from keras import optimizers
 from keras.models import load_model
+from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
 
 from keras.models import Model
-from keras.layers.normalization import BatchNormalization
-from keras.layers.recurrent import LSTM
+from keras.layers.recurrent import LSTM, GRU
 from keras.layers.core import Dense, Dropout, Activation
-from keras.layers import Input, Merge
+from keras.layers import Input, Merge, Masking
 from keras.layers.wrappers import Bidirectional
 
 from sklearn.utils import shuffle
@@ -32,37 +32,50 @@ class MergedModelFunctional:
     a_output_length - .
 
     recurrent_dim - .
-    x_output_length - .
+    rnn_architecture - .
+    go_direction - .
     
     dropout_rate - .
-
+    x_output_length - .
+    
     merged_data_dim - .
     """
-    def __init__(self,
+    def __init__(self, time_dim, 
         output_length, input_dim, attr_dim, 
         a_hidden_length, a_output_length, 
-        recurrent_dim, go_direction, dropout_rate, x_output_length, 
+        recurrent_dim, rnn_architecture, go_direction, dropout_rate, x_output_length, 
         merged_data_dim):
         
         a_input = Input(shape=(attr_dim,))
         a_model = Dense(a_hidden_length, activation='sigmoid')(a_input)
         a_model = Dense(a_output_length, activation='sigmoid')(a_model)
         
-        x_input = Input(shape=(None, input_dim))
+        
+        x_input = Input(shape=(time_dim, input_dim))
+        
+        x_model = None
+        if time_dim:
+            x_model = Masking(mask_value=-1.0)(x_input)
+        
+        RNN_Architecture = GRU if rnn_architecture == "gru" else LSTM
         if go_direction in [-1, 1]:
-            x_model = LSTM(recurrent_dim, activation='tanh', recurrent_activation='hard_sigmoid', 
-                return_sequences=False, go_backwards=(go_direction == -1))(x_input)
+            x_model = RNN_Architecture(recurrent_dim, activation='tanh', recurrent_activation='hard_sigmoid', 
+                return_sequences=False, go_backwards=(go_direction == -1))(x_model if time_dim else x_input)
         else: # go_direction == 2
             x_model = Bidirectional(
-                LSTM(recurrent_dim, activation='tanh', recurrent_activation='hard_sigmoid', return_sequences=False),
-                merge_mode='concat')(x_input)
+                RNN_Architecture(recurrent_dim, activation='tanh', recurrent_activation='hard_sigmoid', return_sequences=False),
+                merge_mode='concat')(x_model if time_dim else x_input)
+        
         x_model = Dropout(dropout_rate)(x_model)
         x_model = Dense(x_output_length, activation='sigmoid')(x_model)
         
+        
         self.model = keras.layers.concatenate([a_model, x_model])
         self.model = Dropout(dropout_rate)(self.model)
+        
         if merged_data_dim > 0:
             self.model = Dense(merged_data_dim, activation='sigmoid')(self.model)
+        
         self.model = Dense(output_length, activation='softmax')(self.model)
         
         self.model = Model(inputs=[a_input, x_input], outputs=self.model)
@@ -134,13 +147,18 @@ class MergedModelFunctional:
                 examples_count += 1
             print("--> ", stats_all, examples_count)
         print(stats_all, examples_count)
+        print(stats_all / examples_count)
     
     
-    def train(self, A_train, X_train, y_train, num_epochs, batch_size, save_models=True):
+    def train(self, A_train, X_train, y_train, num_epochs, batch_size, validation_data=None, save_models=True):
         if type(X_train).__name__ == "list":
             self.train_on_batch(A_train, X_train, y_train, num_epochs, batch_size, save_models)
         else: # X_train is NumPy array
-            self.model.fit([A_train, X_train], y_train, batch_size, num_epochs)
+            checkpoint_callback = ModelCheckpoint("./models/model_"+time.strftime("%m-%d_%H-%M", time.localtime())+".h5", verbose=1, save_best_only=True)
+            lr_callback = ReduceLROnPlateau(monitor="loss", factor=0.5, patience=5, verbose=1, mode="auto", epsilon=0.0001, cooldown=0, min_lr=0.0001)
+            callbacks = [lr_callback] + ([checkpoint_callback] if save_models else [])
+            h = self.model.fit([A_train, X_train], y_train, batch_size, num_epochs, validation_data=validation_data, callbacks=callbacks, verbose=2)
+            print("training history: ", h.params, h.history)
     
     
     def predict(self, A_test, X_test, batch_size):
@@ -150,12 +168,13 @@ class MergedModelFunctional:
         return self.model.predict([A_test, X_test], batch_size)
     
     
-    def test(self, A_test, X_test, y_test):
+    def test(self, A_test, X_test, y_test, batch_size):
         if type(X_test).__name__ == "list":
-            self.test_on_batch(A_test, X_test, y_test)
+            h = self.test_on_batch(A_test, X_test, y_test)
+            print("test_on_batch history: ", h)
         else: # X_test is NumPy array
-            h = self.model.evaluate([A_test, X_test], y_test, batch_size=y_test.shape[0])
-            print(h)
+            h = self.model.evaluate([A_test, X_test], y_test, batch_size=batch_size, verbose=1)
+            print("testing history: ", h)
 
 
 

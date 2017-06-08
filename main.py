@@ -24,11 +24,12 @@ use_fixed_seq_len = False
 output_length = 24
 input_dim = dataset.NUM_CLASSES + 2 if include_time_dim_in_X else dataset.NUM_CLASSES
 attr_dim = len(attr_cols)
+go_direction = 1
 a_hidden_length = 72
 a_output_length = 24
 recurrent_dim = 48
-x_dropout_rate = 0.1
 x_output_length = 48
+dropout_rate = 0.1
 merged_data_dim = 16
 
 num_epochs = 100
@@ -40,7 +41,7 @@ if load_model_filename is not None and load_model_filename != "":
     model = MergedModelFunctional(
         output_length, input_dim, attr_dim, 
         a_hidden_length, a_output_length, 
-        recurrent_dim, x_dropout_rate, x_output_length, 
+        recurrent_dim, go_direction, dropout_rate, x_output_length, 
         merged_data_dim)
     model.load_model_from_file(load_model_filename, custom_objects={"in_top_k_loss": in_top_k_loss, "bin_crossentropy_true_only": bin_crossentropy_true_only})
     
@@ -64,7 +65,7 @@ else:
     model = MergedModelFunctional(
         output_length, input_dim, attr_dim, 
         a_hidden_length, a_output_length, 
-        recurrent_dim, x_dropout_rate, x_output_length, 
+        recurrent_dim, dropout_rate, x_output_length, 
         merged_data_dim)
         
     model.compile(

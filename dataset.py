@@ -5,7 +5,7 @@ import numpy as np
 NUM_CLASSES = 24
 MAX_SEQUENCE_LENGTH = 17
 
-trainset_filename = "./catdf.csv"
+trainset_filename = "./smallcatdf.csv"
 testset_filename = "./testcatdf.csv"
 print(trainset_filename, testset_filename)
 
@@ -222,7 +222,7 @@ def pad_dataset_buckets(A_buckets, X_buckets, y_buckets, seq_len=MAX_SEQUENCE_LE
     
     for i in range(len(X_buckets)):
         t = X_buckets[i].shape[1]
-        X_buckets[i] = np.pad( X_buckets[i] , ( (0,0), (seq_len - t,0), (0,0) ) , mode="constant" )
+        X_buckets[i] = np.pad( X_buckets[i] , ( (0,0), (seq_len - t,0), (0,0) ) , mode="constant", constant_values=-1.0 )
         
         A = np.concatenate((A, A_buckets[i]), axis=0)
         X = np.concatenate((X, X_buckets[i]), axis=0)
@@ -234,17 +234,17 @@ def pad_dataset_buckets(A_buckets, X_buckets, y_buckets, seq_len=MAX_SEQUENCE_LE
 
 
 def load_padded_trainset(max_month=17, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], remove_non_buyers=False, 
-    scale_time_dim=False, include_time_dim_in_X=True):
+    scale_time_dim=False, include_time_dim_in_X=True, seq_len=None):
     
     A_buckets, X_buckets, y_buckets = load_trainset(max_month, attr_cols, remove_non_buyers, scale_time_dim, include_time_dim_in_X)
-    return pad_dataset_buckets(A_buckets, X_buckets, y_buckets, seq_len=max_month)
+    return pad_dataset_buckets(A_buckets, X_buckets, y_buckets, seq_len=max_month if not seq_len else seq_len)
 
 
 
 def load_padded_testset(last_month=17, next_month=18, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], 
-    scale_time_dim=False, include_time_dim_in_X=True):
+    scale_time_dim=False, include_time_dim_in_X=True, seq_len=None):
     
     A_buckets, X_buckets, y_buckets, ids = load_testset(last_month, next_month, attr_cols, scale_time_dim, include_time_dim_in_X)
-    return pad_dataset_buckets(A_buckets, X_buckets, y_buckets, seq_len=next_month) + (ids,)
+    return pad_dataset_buckets(A_buckets, X_buckets, y_buckets, seq_len=next_month if not seq_len else seq_len) + (ids,)
 
 
