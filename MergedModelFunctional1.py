@@ -7,7 +7,7 @@ import keras.backend as K
 
 from keras import optimizers
 from keras.models import load_model
-from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
+from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, Callback
 
 from keras.models import Model
 from keras.layers.recurrent import LSTM, GRU
@@ -18,6 +18,25 @@ from keras.layers.wrappers import Bidirectional
 from sklearn.utils import shuffle
 
 from ModelHistoryCheckpointer import ModelHistoryCheckpointer
+
+
+
+class PeriodicValidation(Callback):
+    def __init__(self, val_data, batch_size, filepath):
+        super(PeriodicValidation, self).__init__()
+        self.val_data = val_data
+        self.batch_size = batch_size
+        self.filepath = filepath
+        self.min_val_loss = np.Inf
+    
+    def on_epoch_end(self, epoch, logs={}):
+        if epoch % 10 == 9:
+            h = self.model.evaluate(self.val_data[0], self.val_data[1], batch_size=self.batch_size, verbose=1)
+            print("validating on " + str(self.val_data[1].shape[0]) + " samples on epoch " + str(epoch) + ": ", h)
+            if h[0] < self.min_val_loss:
+                self.model.save(self.filepath, overwrite=True)
+                print("val_loss improved from "+str(self.min_val_loss)+" to "+str(h[0])+", saving model to "+self.filepath)
+                self.min_val_loss = h[0]
 
 
 
@@ -154,10 +173,13 @@ class MergedModelFunctional:
         if type(X_train).__name__ == "list":
             self.train_on_batch(A_train, X_train, y_train, num_epochs, batch_size, save_models)
         else: # X_train is NumPy array
-            checkpoint_callback = ModelCheckpoint("./models/model_"+time.strftime("%m-%d_%H-%M", time.localtime())+".h5", verbose=1, save_best_only=True)
-            lr_callback = ReduceLROnPlateau(monitor="loss", factor=0.5, patience=5, verbose=1, mode="auto", epsilon=0.0001, cooldown=0, min_lr=0.0001)
-            callbacks = [lr_callback] + ([checkpoint_callback] if save_models else [])
-            h = self.model.fit([A_train, X_train], y_train, batch_size, num_epochs, validation_data=validation_data, callbacks=callbacks, verbose=2)
+            checkpoint_callback = ModelCheckpoint("./models/model_"+time.strftime("%m-%d_%H-%M", time.localtime())+".h5", 
+                monitor="loss", save_best_only=True, verbose=1)
+            lr_callback = ReduceLROnPlateau(monitor="loss", 
+                factor=0.5, patience=5, verbose=1, mode="auto", epsilon=0.0001, cooldown=0, min_lr=0.0001)
+            periodic_val_callback = PeriodicValidation(validation_data, batch_size, "./models/model_val_"+time.strftime("%m-%d_%H-%M", time.localtime())+".h5")
+            callbacks = [lr_callback] + ([checkpoint_callback] if save_models else []) + ([periodic_val_callback] if validation_data else [])
+            h = self.model.fit([A_train, X_train], y_train, batch_size, num_epochs, validation_data=None, callbacks=callbacks, verbose=2)
             print("training history: ", h.params, h.history)
     
     
