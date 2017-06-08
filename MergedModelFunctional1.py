@@ -21,6 +21,9 @@ from ModelHistoryCheckpointer import ModelHistoryCheckpointer
 
 
 
+"""
+PeriodicValidation - Keras callback - checks val_loss every 10 epochs instead of using Model.fit() every epoch
+"""
 class PeriodicValidation(Callback):
     def __init__(self, val_data, batch_size, filepath):
         super(PeriodicValidation, self).__init__()
@@ -37,6 +40,11 @@ class PeriodicValidation(Callback):
                 self.model.save(self.filepath, overwrite=True)
                 print("val_loss improved from "+str(self.min_val_loss)+" to "+str(h[0])+", saving model to "+self.filepath)
                 self.min_val_loss = h[0]
+    
+    def on_train_end(self, logs=None): # also log training metrics with higher decimal precision
+        print("epoch", [m for m in self.model.history.params['metrics']])
+        for epoch in self.model.history.epoch:
+            print(epoch, [self.model.history.history[m][epoch] for m in self.model.history.params['metrics']])
 
 
 
@@ -180,7 +188,8 @@ class MergedModelFunctional:
             periodic_val_callback = PeriodicValidation(validation_data, batch_size, "./models/model_val_"+time.strftime("%m-%d_%H-%M", time.localtime())+".h5")
             callbacks = [lr_callback] + ([checkpoint_callback] if save_models else []) + ([periodic_val_callback] if validation_data else [])
             h = self.model.fit([A_train, X_train], y_train, batch_size, num_epochs, validation_data=None, callbacks=callbacks, verbose=2)
-            print("training history: ", h.params, h.history)
+            print(h.params)
+            # print("training history: ", h.params, h.history)
     
     
     def predict(self, A_test, X_test, batch_size):

@@ -115,15 +115,6 @@ if last_month < dataset.MAX_SEQUENCE_LENGTH:
     
     y_top_k_new_only = calculate_top_k_new_only(model, A_test, X_test, y_test, batch_size, include_time_dim_in_X)
     print("testing MAP@K for NEW products: ", y_top_k_new_only)
-    # model.test(A_test, X_test, y_test, 32)#3)
-    # print(time.strftime("%H:%M:%S", time.localtime()))
-    # model.test(A_test, X_test, y_test, 4)
-    # print(time.strftime("%H:%M:%S", time.localtime()))
-    # model.test(A_test, X_test, y_test, 10)
-    # print(time.strftime("%H:%M:%S", time.localtime()))
-    # model.test(A_test, X_test, y_test, y_test.shape[0])
-    # print(time.strftime("%H:%M:%S", time.localtime()))
-    # model.test_on_batch([A_test], [X_test], [y_test])
     
 else:
     # test data is the testset
