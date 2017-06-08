@@ -96,7 +96,8 @@ else:
         metrics=['binary_crossentropy', 'categorical_crossentropy', in_top_k_loss, o__in_top_k_loss, 'mean_squared_error'])#, 'categorical_accuracy', lambda y_true, y_pred: keras.metrics.top_k_categorical_accuracy(y_true, y_pred, k=7)])
     
     print(time.strftime("%H:%M:%S", time.localtime()))
-    model.train(A_train, X_train, y_train, num_epochs, batch_size, validation_data=([A_test, X_test], y_test), save_models=True)
+    validation_data = ([A_test, X_test], y_test) if last_month < dataset.MAX_SEQUENCE_LENGTH else None
+    model.train(A_train, X_train, y_train, num_epochs, batch_size, validation_data=validation_data, save_models=True)
     
     print(model.checkpointer.file_index_log if hasattr(model, "checkpointer") else "")
     print(time.strftime("%H:%M:%S", time.localtime()))
