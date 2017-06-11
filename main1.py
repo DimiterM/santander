@@ -32,7 +32,7 @@ x_output_length = 48
 dropout_rate = 0.1
 merged_data_dim = 16
 
-num_epochs = 300
+num_epochs = 100
 batch_size = 256
 learning_rate = 0.005
 
@@ -93,7 +93,7 @@ else:
         loss='binary_crossentropy', 
         optimizer=optimizers.RMSprop(lr=learning_rate), 
         #metrics=[bin_crossentropy_true_only, in_top_k_loss, 'binary_crossentropy', 'mean_squared_error'])
-        metrics=['binary_crossentropy', 'categorical_crossentropy', in_top_k_loss, o__in_top_k_loss, 'mean_squared_error'])#, 'categorical_accuracy', lambda y_true, y_pred: keras.metrics.top_k_categorical_accuracy(y_true, y_pred, k=7)])
+        metrics=['binary_crossentropy', 'categorical_crossentropy', in_top_k_loss, 'mean_squared_error'])
     
     print(time.strftime("%H:%M:%S", time.localtime()))
     validation_data = ([A_test, X_test], y_test) if last_month < dataset.MAX_SEQUENCE_LENGTH else None

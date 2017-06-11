@@ -19,6 +19,8 @@ from sklearn.utils import shuffle
 
 from ModelHistoryCheckpointer import ModelHistoryCheckpointer
 
+from functions import calculate_top_k_new_only
+
 
 
 """
@@ -33,12 +35,22 @@ class PeriodicValidation(Callback):
         self.min_val_loss = np.Inf
     
     def on_epoch_end(self, epoch, logs={}):
-        if epoch % 10 == 9:
-            h = self.model.evaluate(self.val_data[0], self.val_data[1], batch_size=self.batch_size, verbose=1)
+        if epoch % 5 == 4:#10 == 9:
+            
+            h = self.model.evaluate(self.val_data[0], self.val_data[1], batch_size=self.batch_size, verbose=0)
             print("validating on " + str(self.val_data[1].shape[0]) + " samples on epoch " + str(epoch) + ": ", h)
+            
+            y_top_k_new_only = calculate_top_k_new_only(self.model, 
+                self.val_data[0][0], self.val_data[0][1], self.val_data[1], self.batch_size, 
+                (not self.val_data[0][1].shape[2] == self.val_data[1].shape[1]))
+            print("testing MAP@K for NEW products: ", y_top_k_new_only)
+            
             if h[0] < self.min_val_loss:
-                self.model.save(self.filepath, overwrite=True)
-                print("val_loss improved from "+str(self.min_val_loss)+" to "+str(h[0])+", saving model to "+self.filepath)
+                if self.filepath:
+                    self.model.save(self.filepath, overwrite=True)
+                    print("val_loss improved from "+str(self.min_val_loss)+" to "+str(h[0])+", saving model to "+self.filepath)
+                else:
+                    print("val_loss improved from "+str(self.min_val_loss)+" to "+str(h[0]))
                 self.min_val_loss = h[0]
     
     def on_train_end(self, logs=None): # also log training metrics with higher decimal precision
@@ -103,7 +115,7 @@ class MergedModelFunctional:
         if merged_data_dim > 0:
             self.model = Dense(merged_data_dim, activation='sigmoid')(self.model)
         
-        self.model = Dense(output_length, activation='softmax')(self.model)
+        self.model = Dense(output_length, activation='sigmoid')(self.model)
         
         self.model = Model(inputs=[a_input, x_input], outputs=self.model)
         self._a_model = a_model
@@ -185,7 +197,8 @@ class MergedModelFunctional:
                 monitor="loss", save_best_only=True, verbose=1)
             lr_callback = ReduceLROnPlateau(monitor="loss", 
                 factor=0.5, patience=5, verbose=1, mode="auto", epsilon=0.0001, cooldown=0, min_lr=0.0001)
-            periodic_val_callback = PeriodicValidation(validation_data, batch_size, "./models/model_val_"+time.strftime("%m-%d_%H-%M", time.localtime())+".h5")
+            periodic_val_callback = PeriodicValidation(validation_data, batch_size, 
+                ("./models/model_val_"+time.strftime("%m-%d_%H-%M", time.localtime())+".h5") if save_models else None)
             callbacks = [lr_callback] + ([checkpoint_callback] if save_models else []) + ([periodic_val_callback] if validation_data else [])
             h = self.model.fit([A_train, X_train], y_train, batch_size, num_epochs, validation_data=None, callbacks=callbacks, verbose=2)
             print(h.params)
