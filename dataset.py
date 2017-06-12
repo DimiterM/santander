@@ -151,30 +151,31 @@ def load_trainset(max_month=17, attr_cols=["t", "sex", "age", "seniority", "is_p
 
 
 
-def load_testset(last_month=17, next_month=18, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], 
+def load_testset(train_month=17, test_month=18, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], 
     scale_time_dim=False, include_time_dim_in_X=True):
     
     testdf = pd.DataFrame()
-    if next_month > MAX_SEQUENCE_LENGTH:
+    if test_month > MAX_SEQUENCE_LENGTH:
         print("testset loaded")
         testdf = pd.read_csv(testset_filename)
     else:
-        print("month " + str(next_month) + " testset loaded")
+        print("month " + str(test_month) + " testset loaded")
         testdf = pd.read_csv(trainset_filename)
-        testdf = testdf.loc[testdf["t"] == next_month]
+        testdf = testdf.loc[testdf["t"] == test_month]
     
     df = pd.DataFrame()
     z_score_stats = dict()
+    last_month = test_month - 1
     if last_month <= 0 or last_month >= MAX_SEQUENCE_LENGTH:
         print("trainset loaded")
         df = pd.read_csv(trainset_filename)
-        z_score_stats = get_z_score_stats(df)
+        z_score_stats = get_z_score_stats(df.loc[df["t"] <= train_month])
         df = df.loc[df["id"].isin(testdf["id"])]
     else:
         print("month " + str(last_month) + " trainset loaded")
         df = pd.read_csv(trainset_filename)
         df = df.loc[df["t"] <= last_month]
-        z_score_stats = get_z_score_stats(df)
+        z_score_stats = get_z_score_stats(df.loc[df["t"] <= train_month])
         df = df.loc[df["id"].isin(testdf["id"])]
     
     testdf.loc[testdf["seniority"] < 0, "seniority"] = 0
@@ -187,7 +188,7 @@ def load_testset(last_month=17, next_month=18, attr_cols=["t", "sex", "age", "se
     ys = df.columns.tolist()[-NUM_CLASSES:]
     df = df[['id', 't', 't_month']+ys]
     df_cols = df.columns.tolist()
-    df = pd.concat([df, testdf[['id', 't', 't_month']+([] if next_month > MAX_SEQUENCE_LENGTH else ys)]], ignore_index=True, copy=False)
+    df = pd.concat([df, testdf[['id', 't', 't_month']+([] if test_month > MAX_SEQUENCE_LENGTH else ys)]], ignore_index=True, copy=False)
     df = df[df_cols] # bug fix: concat unwantedly sorts DataFrame column names if they differ #4588
     
     testdf = df_merge_counts_and_maxs(testdf, df)
