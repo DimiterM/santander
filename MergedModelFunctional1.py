@@ -12,6 +12,7 @@ from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, Callback
 from keras.models import Model
 from keras.layers.recurrent import LSTM, GRU
 from keras.layers.core import Dense, Dropout, Activation
+from keras.layers.advanced_activations import LeakyReLU
 from keras.layers import Input, Merge, Masking
 from keras.layers.wrappers import Bidirectional
 
@@ -86,8 +87,10 @@ class MergedModelFunctional:
         merged_data_dim):
         
         a_input = Input(shape=(attr_dim,))
-        a_model = Dense(a_hidden_length, activation='sigmoid')(a_input)
-        a_model = Dense(a_output_length, activation='sigmoid')(a_model)
+        a_model = Dense(a_hidden_length)(a_input)
+        a_model = LeakyReLU()(a_model)
+        a_model = Dense(a_output_length)(a_model)
+        a_model = LeakyReLU()(a_model)
         
         
         x_input = Input(shape=(time_dim, input_dim))
@@ -106,14 +109,16 @@ class MergedModelFunctional:
                 merge_mode='concat')(x_model if time_dim else x_input)
         
         x_model = Dropout(dropout_rate)(x_model)
-        x_model = Dense(x_output_length, activation='sigmoid')(x_model)
+        x_model = Dense(x_output_length)(x_model)
+        x_model = LeakyReLU()(x_model)
         
         
         self.model = keras.layers.concatenate([a_model, x_model])
         self.model = Dropout(dropout_rate)(self.model)
         
         if merged_data_dim > 0:
-            self.model = Dense(merged_data_dim, activation='sigmoid')(self.model)
+            self.model = Dense(merged_data_dim)(self.model)
+            self.model = LeakyReLU()(self.model)
         
         self.model = Dense(output_length, activation='sigmoid')(self.model)
         
@@ -195,11 +200,12 @@ class MergedModelFunctional:
         else: # X_train is NumPy array
             checkpoint_callback = ModelCheckpoint("./models/model_"+time.strftime("%m-%d_%H-%M", time.localtime())+".h5", 
                 monitor="loss", save_best_only=True, verbose=1)
-            lr_callback = ReduceLROnPlateau(monitor="loss", 
-                factor=0.5, patience=5, verbose=1, mode="auto", epsilon=0.0001, cooldown=0, min_lr=0.0001)
+            # lr_callback = ReduceLROnPlateau(monitor="loss", 
+            #     factor=0.5, patience=5, verbose=1, mode="auto", epsilon=0.0001, cooldown=0, min_lr=0.0001)
             periodic_val_callback = PeriodicValidation(validation_data, batch_size, 
                 ("./models/model_val_"+time.strftime("%m-%d_%H-%M", time.localtime())+".h5") if save_models else None)
-            callbacks = [lr_callback] + ([checkpoint_callback] if save_models else []) + ([periodic_val_callback] if validation_data else [])
+            # callbacks = [lr_callback] + ([checkpoint_callback] if save_models else []) + ([periodic_val_callback] if validation_data else [])
+            callbacks = ([checkpoint_callback] if save_models else []) + ([periodic_val_callback] if validation_data else [])
             h = self.model.fit([A_train, X_train], y_train, batch_size, num_epochs, validation_data=None, callbacks=callbacks, verbose=2)
             print(h.params)
             # print("training history: ", h.params, h.history)
