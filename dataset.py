@@ -242,10 +242,10 @@ def load_padded_trainset(max_month=17, attr_cols=["t", "sex", "age", "seniority"
 
 
 
-def load_padded_testset(last_month=17, next_month=18, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], 
+def load_padded_testset(train_month=17, test_month=18, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], 
     scale_time_dim=False, include_time_dim_in_X=True, seq_len=None):
     
-    A_buckets, X_buckets, y_buckets, ids = load_testset(last_month, next_month, attr_cols, scale_time_dim, include_time_dim_in_X)
-    return pad_dataset_buckets(A_buckets, X_buckets, y_buckets, seq_len=next_month if not seq_len else seq_len) + (ids,)
+    A_buckets, X_buckets, y_buckets, ids = load_testset(train_month, test_month, attr_cols, scale_time_dim, include_time_dim_in_X)
+    return pad_dataset_buckets(A_buckets, X_buckets, y_buckets, seq_len=test_month if not seq_len else seq_len) + (ids,)
 
 
