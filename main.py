@@ -33,9 +33,9 @@ x_output_length = 48
 dropout_rate = 0.1
 merged_data_dim = 16
 
-num_epochs = 100
+num_epochs = 30
 batch_size = 256
-learning_rate = 0.002
+learning_rate = 0.0005#0.002
 
 
 
@@ -76,7 +76,7 @@ else:
 if load_model_filename is not None and load_model_filename != "":
     ### load model
     print("loading model from file: " + load_model_filename)
-    model = MergedModelFunctional(None,
+    model = RecurrentModel(None,
         output_length, input_dim, attr_dim, 
         a_hidden_length, a_output_length, 
         recurrent_dim, rnn_architecture, go_direction, dropout_rate, x_output_length, 
@@ -87,7 +87,7 @@ else:
     ### create model
     print(time.strftime("%H:%M:%S", time.localtime()))
     
-    model = RecurrentModel(X_train.shape[1],
+    model = RecurrentModel(None,
         output_length, input_dim, attr_dim, 
         a_hidden_length, a_output_length, 
         recurrent_dim, rnn_architecture, go_direction, dropout_rate, x_output_length, 
@@ -100,17 +100,17 @@ else:
         metrics=['binary_crossentropy', 'categorical_crossentropy', in_top_k_loss, 'mean_squared_error'])
     
     print(time.strftime("%H:%M:%S", time.localtime()))
-    validation_data = ([A_test, X_test], y_test) if last_month < dataset.MAX_SEQUENCE_LENGTH else None
+    validation_data = ([A_test, X_test], y_test) if test_month <= dataset.MAX_SEQUENCE_LENGTH else None
     model.train(A_train, X_train, y_train, num_epochs, batch_size, validation_data=validation_data, save_models=True)
     
     print(model.checkpointer.file_index_log if hasattr(model, "checkpointer") else "")
     print(time.strftime("%H:%M:%S", time.localtime()))
-    model.model.save("./model_T"+str(last_month)+"_"+time.strftime("%m-%d_%H-%M", time.localtime())+".h5")
+    model.model.save("./model_T"+str(train_month)+"_"+time.strftime("%m-%d_%H-%M", time.localtime())+".h5")
 
 
 ### score or predict
 print(time.strftime("%H:%M:%S", time.localtime()))
-if last_month < dataset.MAX_SEQUENCE_LENGTH:
+if test_month <= dataset.MAX_SEQUENCE_LENGTH:
     # test data is from trainset
     print("testing score")
     print(time.strftime("%H:%M:%S", time.localtime()))
@@ -124,7 +124,7 @@ else:
     # test data is the testset
     print("predicting")
     y_test_pred = model.predict(A_test, X_test, batch_size)
-    np.savetxt("./res_T"+str(last_month)+"_"+time.strftime("%m-%d_%H-%M", time.localtime())+".csv", 
+    np.savetxt("./res_T"+str(train_month)+"_"+time.strftime("%m-%d_%H-%M", time.localtime())+".csv", 
         np.concatenate((ids_test, y_test_pred), axis=1), delimiter=",")
 
 #

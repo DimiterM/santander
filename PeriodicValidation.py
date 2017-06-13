@@ -24,7 +24,7 @@ class PeriodicValidation(Callback):
         self.min_val_loss = np.Inf
     
     def on_epoch_end(self, epoch, logs={}):
-        if epoch % 5 == 4:#10 == 9:
+        if epoch % 5 == 4 or epoch % 5 == 2:
             
             h = self.model.evaluate(self.val_data[0], self.val_data[1], batch_size=self.batch_size, verbose=0)
             print("validating on " + str(self.val_data[1].shape[0]) + " samples on epoch " + str(epoch) + ": ", h)
