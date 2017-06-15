@@ -4,6 +4,7 @@
 *.hdf5
 data/
 models/
+tsne/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
