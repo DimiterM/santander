@@ -13,7 +13,7 @@ from functions import calculate_top_k_new_only
 
 
 """
-PeriodicValidation - Keras callback - checks val_loss every 10 epochs instead of using Model.fit() every epoch
+PeriodicValidation - Keras callback - checks val_loss periodically instead of using Model.fit() every epoch
 """
 class PeriodicValidation(Callback):
     def __init__(self, val_data, batch_size, filepath):
@@ -25,6 +25,12 @@ class PeriodicValidation(Callback):
     
     def on_epoch_end(self, epoch, logs={}):
         if epoch % 5 == 4 or epoch % 5 == 2:
+            
+            if self.filepath:
+                self.model.save(self.filepath+".ep_"+str(epoch)+".h5", overwrite=True)
+            
+            if self.val_data is None:
+                return
             
             h = self.model.evaluate(self.val_data[0], self.val_data[1], batch_size=self.batch_size, verbose=0)
             print("validating on " + str(self.val_data[1].shape[0]) + " samples on epoch " + str(epoch) + ": ", h)

@@ -35,7 +35,7 @@ merged_data_dim = 16
 
 num_epochs = 30
 batch_size = 256
-learning_rate = 0.0005#0.002
+learning_rate = 0.001
 
 
 

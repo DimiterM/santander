@@ -58,19 +58,16 @@ class RecurrentModel:
         
         
         x_input = Input(shape=(time_dim, input_dim))
-        
-        x_model = None
-        #if time_dim:
         x_model = Masking(mask_value=-1.0)(x_input)
         
         RNN_Architecture = GRU if rnn_architecture == "gru" else LSTM
         if go_direction in [-1, 1]:
             x_model = RNN_Architecture(recurrent_dim, activation='tanh', recurrent_activation='hard_sigmoid', 
-                return_sequences=False, go_backwards=(go_direction == -1))(x_model)#(x_model if time_dim else x_input)
+                return_sequences=False, go_backwards=(go_direction == -1))(x_model)
         else: # go_direction == 2
             x_model = Bidirectional(
                 RNN_Architecture(recurrent_dim, activation='tanh', recurrent_activation='hard_sigmoid', return_sequences=False),
-                merge_mode='concat')(x_model)#(x_model if time_dim else x_input)
+                merge_mode='concat')(x_model)
         
         x_model = Dropout(dropout_rate)(x_model)
         x_model = Dense(x_output_length)(x_model)
