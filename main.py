@@ -26,14 +26,14 @@ input_dim = dataset.NUM_CLASSES + 2 if include_time_dim_in_X else dataset.NUM_CL
 attr_dim = len(attr_cols)
 rnn_architecture = "lstm"
 go_direction = 1
-a_hidden_length = 72
+a_hidden_length = 60
 a_output_length = 24
 recurrent_dim = 48
 x_output_length = 48
 dropout_rate = 0.1
-merged_data_dim = 16
+merged_data_dim = 50
 
-num_epochs = 30
+num_epochs = 20
 batch_size = 256
 learning_rate = 0.001
 
