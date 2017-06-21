@@ -5,10 +5,8 @@ import numpy as np
 NUM_CLASSES = 24
 MAX_SEQUENCE_LENGTH = 17
 
-trainset_filename = "./catdf.csv"
-testset_filename = "./testcatdf.csv"
-print(trainset_filename, testset_filename)
-
+DEFAULT_TRAINSET_FILENAME = "./catdf.csv"
+DEFAULT_TESTSET_FILENAME = "./testcatdf.csv"
 
 
 """
@@ -110,9 +108,11 @@ def scale_df_time_dim(df, t_month):
 
 
 
-def load_trainset(max_month=17, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], remove_non_buyers=False, 
+def load_trainset(trainset_filename=DEFAULT_TRAINSET_FILENAME, 
+    max_month=17, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], remove_non_buyers=False, 
     scale_time_dim=False, include_time_dim_in_X=True):
     
+    print(trainset_filename)
     df = pd.read_csv(trainset_filename)
     
     if max_month > 0 and max_month < MAX_SEQUENCE_LENGTH:
@@ -151,9 +151,11 @@ def load_trainset(max_month=17, attr_cols=["t", "sex", "age", "seniority", "is_p
 
 
 
-def load_testset(train_month=17, test_month=18, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], 
+def load_testset(trainset_filename=DEFAULT_TRAINSET_FILENAME, testset_filename=DEFAULT_TESTSET_FILENAME, 
+    train_month=17, test_month=18, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], 
     scale_time_dim=False, include_time_dim_in_X=True):
     
+    print(trainset_filename, testset_filename)
     testdf = pd.DataFrame()
     if test_month > MAX_SEQUENCE_LENGTH:
         print("testset loaded")
@@ -234,18 +236,20 @@ def pad_dataset_buckets(A_buckets, X_buckets, y_buckets, seq_len=MAX_SEQUENCE_LE
 
 
 
-def load_padded_trainset(max_month=17, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], remove_non_buyers=False, 
+def load_padded_trainset(trainset_filename=DEFAULT_TRAINSET_FILENAME, 
+    max_month=17, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], remove_non_buyers=False, 
     scale_time_dim=False, include_time_dim_in_X=True, seq_len=None):
     
-    A_buckets, X_buckets, y_buckets = load_trainset(max_month, attr_cols, remove_non_buyers, scale_time_dim, include_time_dim_in_X)
+    A_buckets, X_buckets, y_buckets = load_trainset(trainset_filename, max_month, attr_cols, remove_non_buyers, scale_time_dim, include_time_dim_in_X)
     return pad_dataset_buckets(A_buckets, X_buckets, y_buckets, seq_len=max_month if not seq_len else seq_len)
 
 
 
-def load_padded_testset(train_month=17, test_month=18, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], 
+def load_padded_testset(trainset_filename=DEFAULT_TRAINSET_FILENAME, testset_filename=DEFAULT_TESTSET_FILENAME, 
+    train_month=17, test_month=18, attr_cols=["t", "sex", "age", "seniority", "is_primary", "is_domestic", "income"], 
     scale_time_dim=False, include_time_dim_in_X=True, seq_len=None):
     
-    A_buckets, X_buckets, y_buckets, ids = load_testset(train_month, test_month, attr_cols, scale_time_dim, include_time_dim_in_X)
+    A_buckets, X_buckets, y_buckets, ids = load_testset(trainset_filename, testset_filename, train_month, test_month, attr_cols, scale_time_dim, include_time_dim_in_X)
     return pad_dataset_buckets(A_buckets, X_buckets, y_buckets, seq_len=test_month if not seq_len else seq_len) + (ids,)
 
 

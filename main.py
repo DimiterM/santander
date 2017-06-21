@@ -9,23 +9,44 @@ from RecurrentModel import RecurrentModel
 from keras import optimizers
 
 
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('--trainset', default="./catdf.csv")
+parser.add_argument('--testset', default="./testcatdf.csv")
+parser.add_argument('-m', '--train_month', type=int, default=17)
+parser.add_argument('-t', '--test_month', type=int, default=18)
+parser.add_argument('--use_buckets', action="store_true", default=False)
+parser.add_argument('-f', '--model_filename')
+parser.add_argument('-a', '--rnn_architecture', default="lstm")
+parser.add_argument('-g', '--go_direction', type=int, default=1)
+parser.add_argument('-n', '--num_epochs', type=int, default=20)
+parser.add_argument('-b', '--batch_size', type=int, default=256)
+parser.add_argument('-l', '--learning_rate', type=float, default=0.001)
+args = parser.parse_args()
+
+
+trainset_filename = args.trainset or "./catdf.csv"
+testset_filename = args.testset or "./testcatdf.csv"
+print(trainset_filename, testset_filename)
+
+
 ### set parameters
 print(time.strftime("%H:%M:%S", time.localtime()))
-load_model_filename = None
+load_model_filename = args.model_filename or None
 
-train_month = 16
-test_month = 17
+train_month = args.train_month or 17
+test_month = args.test_month or 18
 attr_cols = ['t', 't_month', 'sex', 'age', 'seniority_new', 'seniority', 'is_primary', 'is_domestic', 'is_foreigner', 'is_dead', 'is_active', 'income', 'employee_bit_notN', 'country_num', 'customer_type_bit_not1', 'customer_rel_I', 'customer_rel_A', 'channel_0_0', 'channel_0_1', 'channel_0_2', 'channel_1_0', 'channel_1_1', 'channel_1_2', 'channel_1_3', 'channel_1_4', 'channel_1_5', 'channel_1_6', 'channel_1_7', 'channel_1_8', 'province_AFR', 'province_AND', 'province_ARA', 'province_AST', 'province_BAL', 'province_BAS', 'province_CAN', 'province_CAS', 'province_CAT', 'province_CNB', 'province_EXT', 'province_GAL', 'province_MAD', 'province_MAN', 'province_MUR', 'province_NAV', 'province_RIO', 'province_VAL', 'province_pop', 'segment_1', 'segment_2', 'segment_3']
 remove_non_buyers = False
 scale_time_dim = True
 include_time_dim_in_X = True
-use_fixed_seq_len = True
+use_fixed_seq_len = not args.use_buckets # True
 
 output_length = 24
 input_dim = dataset.NUM_CLASSES + 2 if include_time_dim_in_X else dataset.NUM_CLASSES
 attr_dim = len(attr_cols)
-rnn_architecture = "lstm"
-go_direction = 1
+rnn_architecture = args.rnn_architecture or "lstm"
+go_direction = args.go_direction or 1
 a_hidden_length = 60
 a_output_length = 24
 recurrent_dim = 48
@@ -33,9 +54,9 @@ x_output_length = 48
 dropout_rate = 0.1
 merged_data_dim = 50
 
-num_epochs = 20
-batch_size = 256
-learning_rate = 0.001
+num_epochs = args.num_epochs or 20
+batch_size = args.batch_size or 256
+learning_rate = args.learning_rate or 0.001
 
 
 
@@ -43,14 +64,16 @@ learning_rate = 0.001
 A_train, X_train, y_train = None, None, None
 if load_model_filename is None or load_model_filename == "":
     if not use_fixed_seq_len:
-        A_train, X_train, y_train = dataset.load_trainset(max_month=train_month, attr_cols=attr_cols, 
+        A_train, X_train, y_train = dataset.load_trainset(trainset_filename=trainset_filename, 
+            max_month=train_month, attr_cols=attr_cols, 
             remove_non_buyers=remove_non_buyers, scale_time_dim=scale_time_dim, include_time_dim_in_X=include_time_dim_in_X)
         
         for a, x, y in zip(A_train, X_train, y_train):
             print(a.shape, x.shape, y.shape)
         
     else:
-        A_train, X_train, y_train = dataset.load_padded_trainset(max_month=train_month, attr_cols=attr_cols, 
+        A_train, X_train, y_train = dataset.load_padded_trainset(trainset_filename=trainset_filename, 
+            max_month=train_month, attr_cols=attr_cols, 
             remove_non_buyers=remove_non_buyers, scale_time_dim=scale_time_dim, include_time_dim_in_X=include_time_dim_in_X, seq_len=17)
         
         print(A_train.shape, X_train.shape, y_train.shape)
@@ -58,7 +81,8 @@ if load_model_filename is None or load_model_filename == "":
 
 ### load test set
 if not use_fixed_seq_len:
-    A_test, X_test, y_test, ids_test = dataset.load_testset(train_month=train_month, test_month=test_month, attr_cols=attr_cols, 
+    A_test, X_test, y_test, ids_test = dataset.load_testset(trainset_filename=trainset_filename, testset_filename=testset_filename, 
+        train_month=train_month, test_month=test_month, attr_cols=attr_cols, 
         scale_time_dim=scale_time_dim, include_time_dim_in_X=include_time_dim_in_X)
     
     for a, x, y in zip(A_test, X_test, y_test):
@@ -67,7 +91,8 @@ if not use_fixed_seq_len:
     print(ids_test.shape)
     
 else:
-    A_test, X_test, y_test, ids_test = dataset.load_padded_testset(train_month=train_month, test_month=test_month, attr_cols=attr_cols, 
+    A_test, X_test, y_test, ids_test = dataset.load_padded_testset(trainset_filename=trainset_filename, testset_filename=testset_filename, 
+        train_month=train_month, test_month=test_month, attr_cols=attr_cols, 
         scale_time_dim=scale_time_dim, include_time_dim_in_X=include_time_dim_in_X)
     print(A_test.shape, X_test.shape, y_test.shape)
     print(ids_test.shape)

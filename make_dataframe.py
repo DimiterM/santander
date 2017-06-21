@@ -8,8 +8,15 @@ ISTEST - True for the test set, False for the train set
 
 import pandas as pd
 import numpy as np
-IMPUTE = True
-ISTEST = False
+
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('--noimpute', dest='no_impute', default=False, action='store_true', help="True if the script should NOT impute missing values")
+parser.add_argument('--test', dest='is_test', default=False, action='store_true', help="True for the test set, False for the train set")
+args = parser.parse_args()
+
+IMPUTE = not args.no_impute
+ISTEST = args.is_test
 df = pd.DataFrame()
 tr = pd.read_csv("./"+("test" if ISTEST else "train")+"_ver2.csv", 
     dtype={"age":str, "antiguedad":str, "indrel_1mes":str, "conyuemp":str})

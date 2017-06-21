@@ -27,22 +27,22 @@ from functions import calculate_top_k_new_only
 class RecurrentModel:
     
     """
-    time_dim - .
-    output_length - .
-    input_dim - .
-    attr_dim - .
+    time_dim -> None or timesteps dimension size
+    output_length -> number of classes
+    input_dim -> X dataset length
+    attr_dim -> A dataset length
 
-    a_hidden_length - .
-    a_output_length - .
+    a_hidden_length -> hidden layer size for a_model branch
+    a_output_length -> output layer size for a_model branch
 
-    recurrent_dim - .
-    rnn_architecture - .
-    go_direction - .
+    recurrent_dim -> recurrent layer size (for x_model branch)
+    rnn_architecture -> "lstm" or "gru"
+    go_direction -> 1 (forward), -1 (backward), 2 (bidirectional)
     
-    dropout_rate - .
-    x_output_length - .
+    dropout_rate -> dropout rate
+    x_output_length -> output layer size for x_model branch
     
-    merged_data_dim - .
+    merged_data_dim -> last hidden layer size
     """
     def __init__(self, time_dim, 
         output_length, input_dim, attr_dim, 

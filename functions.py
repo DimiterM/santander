@@ -48,19 +48,3 @@ def calculate_top_k_new_only(model, A_test, X_test, y_test, batch_size, include_
             X_test[:,-1:,(2 if include_time_dim_in_X else 0):].reshape(X_test.shape[0], X_test.shape[2] - (2 if include_time_dim_in_X else 0)))
         )
 
-def calculate_top_k_new_only_maxdataset(model, X_test, y_test, batch_size):
-    y_pred = model.predict(X_test, batch_size)
-    return (-1) * K.eval(
-        in_top_k_loss_new_only(
-            y_test, y_pred, 
-            X_test[:,-48:-24])
-        )
-
-def calculate_top_k_new_only_concatdataset(model, X_test, y_test, batch_size, len_attr_cols):
-    y_pred = model.predict(X_test, batch_size)
-    return (-1) * K.eval(
-        in_top_k_loss_new_only(
-            y_test, y_pred, 
-            X_test[:,len_attr_cols:len_attr_cols+24])
-        )
-
