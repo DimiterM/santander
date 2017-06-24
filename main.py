@@ -1,14 +1,3 @@
-import time
-import pandas as pd
-import numpy as np
-
-import dataset
-from functions import *
-from RecurrentModel import RecurrentModel
-
-from keras import optimizers
-
-
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--trainset', default="./catdf.csv")
@@ -23,6 +12,17 @@ parser.add_argument('-n', '--num_epochs', type=int, default=20)
 parser.add_argument('-b', '--batch_size', type=int, default=256)
 parser.add_argument('-l', '--learning_rate', type=float, default=0.001)
 args = parser.parse_args()
+
+
+import time
+import pandas as pd
+import numpy as np
+
+import dataset
+from functions import *
+from RecurrentModel import RecurrentModel
+
+from keras import optimizers
 
 
 trainset_filename = args.trainset or "./catdf.csv"

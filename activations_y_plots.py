@@ -1,3 +1,15 @@
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('--trainset', default="./catdf.csv")
+parser.add_argument('--testset', default="./testcatdf.csv")
+parser.add_argument('model_filename')
+parser.add_argument('-l', '--hidden_layer_index', type=int, default=-5)
+parser.add_argument('-m', '--train_month', type=int, default=16)
+parser.add_argument('-t', '--test_month', type=int, default=17)
+parser.add_argument('-n', '--top_n_samples', type=int, default=10)
+args = parser.parse_args()
+
+
 import time
 import pandas as pd
 import numpy as np
@@ -12,18 +24,6 @@ from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.manifold import TSNE
 
 import matplotlib.pyplot as plt
-
-
-import argparse
-parser = argparse.ArgumentParser()
-parser.add_argument('--trainset', default="./catdf.csv")
-parser.add_argument('--testset', default="./testcatdf.csv")
-parser.add_argument('model_filename')
-parser.add_argument('-l', '--hidden_layer_index', type=int, default=-5)
-parser.add_argument('-m', '--train_month', type=int, default=16)
-parser.add_argument('-t', '--test_month', type=int, default=17)
-parser.add_argument('-n', '--top_n_samples', type=int, default=10)
-args = parser.parse_args()
 
 
 trainset_filename = args.trainset or "./catdf.csv"

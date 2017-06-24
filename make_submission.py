@@ -6,15 +6,15 @@ RESULTS_FILENAME
 SUBMIT_FILENAME
 """
 
-import time
-import numpy as np
-import pandas as pd
-
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("results_filename")
 parser.add_argument("submit_filename")
 args = parser.parse_args()
+
+import time
+import numpy as np
+import pandas as pd
 
 RESULTS_FILENAME = args.results_filename
 SUBMIT_FILENAME  = args.submit_filename
