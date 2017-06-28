@@ -3,13 +3,16 @@
 Димитър Пенчев Мутафчиев, 24990
 
 Необходими ресурси:
-Python          3.6.0       https://www.python.org/
-Keras           2.0.3       https://keras.io/
-matplotlib      2.0.0       https://matplotlib.org/
-numpy           1.12.1+mkl  http://www.numpy.org/
-pandas          0.19.0      http://pandas.pydata.org/
-scikit-learn    0.18        http://scikit-learn.org/stable/
-tensorflow      1.0.1       https://www.tensorflow.org/
+Python (64-bit)   3.6.0       https://www.python.org/
+Keras             2.0.3       https://keras.io/
+matplotlib        2.0.0       https://matplotlib.org/
+numpy             1.12.1+mkl  http://www.numpy.org/
+pandas            0.19.0      http://pandas.pydata.org/
+scikit-learn      0.18        http://scikit-learn.org/stable/
+tensorflow        1.0.1       https://www.tensorflow.org/
+h5py              2.7.0       http://www.h5py.org/
+Инсталират се с командата `pip install`
+(при проблеми на Windows OS: някои могат да бъдат изтеглени от тук: http://www.lfd.uci.edu/~gohlke/pythonlibs/)
 
 Множество от данни: линк за изтегляне https://www.kaggle.com/c/santander-product-recommendation/data
 
@@ -24,7 +27,7 @@ main.py [-h] [--trainset TRAINSET] [--testset TESTSET] [-m TRAIN_MONTH]
   --testset TESTSET                                         ### име на файл с тестови данни
   -m TRAIN_MONTH, --train_month TRAIN_MONTH                 ### номер (1-17) на последния месец за тренировъчните данни
   -t TEST_MONTH, --test_month TEST_MONTH                    ### номер (2-18) на месец за тестовите данни
-  --use_buckets                                             ### флаг, който указва да не се използва маскиране на липсващата история, а да се направи списък от тренировъчни данни с различни дължини (по подразбиране не се използва флага)
+  --use_buckets                                             ### флаг, който указва да не се използва маскиране на липсващата история, а да се направи списък от тренировъчни данни с различни дължини (по подразбиране флагът не се използва)
   -f MODEL_FILENAME, --model_filename MODEL_FILENAME        ### файл с готов предварително обучен модел
   -a RNN_ARCHITECTURE, --rnn_architecture RNN_ARCHITECTURE  ### рекурентна архитектура, която да се използва (по подразбиране: LSTM)
   -g GO_DIRECTION, --go_direction GO_DIRECTION              ### посока на четене на историята: 1 = в хронологичен ред (по подразбиране), -1 = наобратно, 2 = двупосочно
