@@ -7,6 +7,7 @@ parser.add_argument('-l', '--hidden_layer_index', type=int, default=-5)
 parser.add_argument('-m', '--train_month', type=int, default=16)
 parser.add_argument('-t', '--test_month', type=int, default=17)
 parser.add_argument('-n', '--top_n_samples', type=int, default=10)
+parser.add_argument('-s', '--shuffle_split_size', type=float, default=0.005)
 args = parser.parse_args()
 
 
@@ -95,8 +96,9 @@ activations = get_layer_activations(A_train, X_train, get_merged_layer_function(
 print(time.strftime("%H:%M:%S", time.localtime()))
 print("plot embeddings")
 
+shuffle_split_size = args.shuffle_split_size or 0.005
 for c in range(dataset.NUM_CLASSES):
-    s = StratifiedShuffleSplit(test_size=0.005)
+    s = StratifiedShuffleSplit(test_size=shuffle_split_size)
     _, i = next( s.split(activations, y_train[:,c]) )
     X_acts, y = activations[i], y_train[i][:,c]
     print(c+1, y[y > 0].shape[0], int(y_train[:,c].sum()))

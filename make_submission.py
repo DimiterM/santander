@@ -10,12 +10,16 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("results_filename")
 parser.add_argument("submit_filename")
+parser.add_argument('-d', '--dataset', default="./df.csv")
+parser.add_argument('-m', '--month', type=int, default=17)
 args = parser.parse_args()
 
 import time
 import numpy as np
 import pandas as pd
 
+DATASET = args.dataset or "./df.csv"
+MONTH = args.month or 17
 RESULTS_FILENAME = args.results_filename
 SUBMIT_FILENAME  = args.submit_filename
 print(time.strftime("%H:%M:%S", time.localtime()))
@@ -28,8 +32,8 @@ PRODUCT_LABELS = [
 
 NUM_CLASSES = len(PRODUCT_LABELS)
 K_VAL = 7
-iter_csv = pd.read_csv("./df.csv", iterator=True, chunksize=1000000)
-lastdf = pd.concat([chunk[chunk["t"] == 17] for chunk in iter_csv])
+iter_csv = pd.read_csv(DATASET, iterator=True, chunksize=1000000)
+lastdf = pd.concat([chunk[chunk["t"] == MONTH] for chunk in iter_csv])
 lastdf = pd.concat([lastdf["id"], lastdf.iloc[:,-NUM_CLASSES:]], axis=1)
 
 res = res.merge(lastdf, left_on=0, right_on="id", how="left", copy=False).as_matrix()

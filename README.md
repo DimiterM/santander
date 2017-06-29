@@ -49,6 +49,8 @@ make_submission.py [-h] results_filename submit_filename
   submit_filename   ### име на файл, в който да бъдат записани списъците с препоръки
 опционални аргументи:
   -h, --help        ### изписва това съобщение и завършва
+  -d DATASET, --dataset DATASET   ### файл с последни данни за клиентите (по подразбиране: "df.csv")
+  -m MONTH, --month MONTH         ### последен месец (по подразбиране: 17)
 
 
 activations_y_plots.py [-h] [--trainset TRAINSET] [--testset TESTSET]
@@ -65,5 +67,6 @@ activations_y_plots.py [-h] [--trainset TRAINSET] [--testset TESTSET]
   -m TRAIN_MONTH, --train_month TRAIN_MONTH                         ### номер (1-17) на последния месец за тренировъчните данни
   -t TEST_MONTH, --test_month TEST_MONTH                            ### номер (2-18) на месец за тестовите данни
   -n TOP_N_SAMPLES, --top_n_samples TOP_N_SAMPLES                   ### да се покажат толкова на брой примери, които активират максимално всеки неврон в скрития слой (по подразбиране: 10)
+  -s SHUFFLE_SPLIT_SIZE, --shuffle_split_size SHUFFLE_SPLIT_SIZE    ### дял от всички данни, които да се изобразят (по подразбиране: 0.005)
 
 
