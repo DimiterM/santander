@@ -17,6 +17,7 @@ h5py              2.7.0       http://www.h5py.org/
 Множество от данни: линк за изтегляне https://www.kaggle.com/c/santander-product-recommendation/data
 
 
+# главен файл за програмата - създава/използва модел над множеството от данни, за да предскаже предпочитанията на клиентите
 main.py [-h] [--trainset TRAINSET] [--testset TESTSET] [-m TRAIN_MONTH]
         [-t TEST_MONTH] [--use_buckets] [-f MODEL_FILENAME]
         [-a RNN_ARCHITECTURE] [-g GO_DIRECTION] [-n NUM_EPOCHS]
@@ -36,6 +37,7 @@ main.py [-h] [--trainset TRAINSET] [--testset TESTSET] [-m TRAIN_MONTH]
   -l LEARNING_RATE, --learning_rate LEARNING_RATE           ### скорост на обучение (по подразбиране: 0.001)
 
 
+# скрипт, който преобразува оригиналното множество от данни до тренировъчното множество, над което работи моделът
 make_dataframe.py [-h] [--noimpute] [--test]
 опционални аргументи:
   -h, --help  ### изписва това съобщение и завършва
@@ -43,6 +45,7 @@ make_dataframe.py [-h] [--noimpute] [--test]
   --test      ### флаг, който указва дали да се преобразува тестовото или тренировъчното множество
 
 
+# скрипт, който преобразува масив от предсказания, изведени на изхода на препоръчващата система до списък с до 7 артикула, които да бъдат предложени на клиентите
 make_submission.py [-h] results_filename submit_filename
 позиционни аргументи:
   results_filename  ### име на файл с резултати от класификацията
@@ -53,6 +56,7 @@ make_submission.py [-h] results_filename submit_filename
   -m MONTH, --month MONTH         ### последен месец (по подразбиране: 17)
 
 
+# скрипт, който представя част от вътрешните състояния на модела и примерите, които активират максимално всеки от невроните
 activations_y_plots.py [-h] [--trainset TRAINSET] [--testset TESTSET]
                        [-l HIDDEN_LAYER_INDEX] [-m TRAIN_MONTH]
                        [-t TEST_MONTH] [-n TOP_N_SAMPLES]
